@@ -37,6 +37,12 @@
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm z</maven.build.timestamp.format>
 
+        <!-- Docker build configuration -->
+        <!--suppress UnresolvedMavenProperty -->
+        <docker.repository>${LEAFLET_DOCKER_REGISTRY_HOST}</docker.repository>
+        <docker.image-name>lsas</docker.image-name>
+        <docker.skip>true</docker.skip>
+
         <!-- other versions -->
         <jackson.version>2.10.2</jackson.version>
         <jersey.version>2.30</jersey.version>
@@ -48,6 +54,8 @@
         <mockito.version>2.28.2</mockito.version>
         <jacoco-maven-plugin.version>0.8.4</jacoco-maven-plugin.version>
         <hibernate-validator.version>6.1.2.Final</hibernate-validator.version>
+        <maven-deploy-plugin.version>3.0.0-M1</maven-deploy-plugin.version>
+        <dockerfile-maven-plugin.version>1.4.13</dockerfile-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -184,6 +192,14 @@
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <argLine>${argLine.surefire}</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>${maven-deploy-plugin.version}</version>
+                <configuration>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
             <plugin>
