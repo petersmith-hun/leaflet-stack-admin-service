@@ -19,5 +19,6 @@ WORKDIR $APP_HOME
 RUN chmod 744 $APP_HOME
 RUN chmod 744 $APP_EXECUTABLE
 RUN chown -R $APP_USER:$APP_USER $APP_HOME
+RUN chmod u+x start.sh
 
 ENTRYPOINT ./start.sh
