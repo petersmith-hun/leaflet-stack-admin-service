@@ -1,8 +1,9 @@
 package hu.psprog.leaflet.lsas.core.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
 import java.time.ZonedDateTime;
 
@@ -11,6 +12,9 @@ import java.time.ZonedDateTime;
  *
  * @author Peter Smith
  */
+@Getter
+@EqualsAndHashCode
+@ToString
 public class BuildInfo {
 
     private ZonedDateTime time;
@@ -20,35 +24,5 @@ public class BuildInfo {
     public BuildInfo(ZonedDateTime time, String version) {
         this.time = time;
         this.version = version;
-    }
-
-    public ZonedDateTime getTime() {
-        return time;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-
-        if (o == null || getClass() != o.getClass()) return false;
-
-        BuildInfo buildInfo = (BuildInfo) o;
-
-        return new EqualsBuilder()
-                .append(time, buildInfo.time)
-                .append(version, buildInfo.version)
-                .isEquals();
-    }
-
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(time)
-                .append(version)
-                .toHashCode();
     }
 }
