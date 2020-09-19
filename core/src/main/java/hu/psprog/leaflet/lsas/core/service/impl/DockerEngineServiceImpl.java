@@ -1,12 +1,12 @@
 package hu.psprog.leaflet.lsas.core.service.impl;
 
 import hu.psprog.leaflet.lsas.core.client.DockerContainerStatisticsClient;
-import hu.psprog.leaflet.lsas.core.service.converter.ContainerConverter;
-import hu.psprog.leaflet.lsas.core.service.converter.ContainerDetailsConverter;
 import hu.psprog.leaflet.lsas.core.domain.Container;
 import hu.psprog.leaflet.lsas.core.domain.ContainerDetails;
 import hu.psprog.leaflet.lsas.core.domain.ContainerStats;
 import hu.psprog.leaflet.lsas.core.service.DockerEngineService;
+import hu.psprog.leaflet.lsas.core.service.converter.ContainerConverter;
+import hu.psprog.leaflet.lsas.core.service.converter.ContainerDetailsConverter;
 import hu.psprog.leaflet.lsas.core.service.factory.ContainerStatsFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -71,9 +71,8 @@ public class DockerEngineServiceImpl implements DockerEngineService {
     private Flux<ContainerDetails> getContainerDetails(String containerID) {
 
         return dockerContainerStatisticsClient.getContainerDetails(containerID)
-                .repeat()
-                .delayElements(POLL_FREQUENCY)
-                .map(containerDetailsConverter::convert);
+                .map(containerDetailsConverter::convert)
+                .repeatWhen(longFlux -> Flux.interval(POLL_FREQUENCY));
     }
 
     private Flux<ContainerStats> getContainerStatistics(String containerID) {
