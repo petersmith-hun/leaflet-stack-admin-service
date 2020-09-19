@@ -2,9 +2,14 @@ package hu.psprog.leaflet.lsas.core.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ClientCodecConfigurer;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -18,6 +23,13 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class ServiceConfiguration {
 
+    private final ServiceRegistrations serviceRegistrations;
+
+    @Autowired
+    public ServiceConfiguration(ServiceRegistrations serviceRegistrations) {
+        this.serviceRegistrations = serviceRegistrations;
+    }
+
     @Bean
     public Client jerseyClient(ObjectMapper objectMapper, @Value("${lsas.call-timeout}") int readTimeout) {
 
@@ -25,5 +37,18 @@ public class ServiceConfiguration {
                 .register(new JacksonJsonProvider(objectMapper))
                 .readTimeout(readTimeout, TimeUnit.MILLISECONDS)
                 .build();
+    }
+
+    @Bean
+    public WebClient dockerEngineWebClient(ObjectMapper objectMapper) {
+
+        return WebClient.builder()
+                .baseUrl(serviceRegistrations.getDockerIntegration().getEngineHost())
+                .codecs(clientCodecConfigurer -> registerJacksonDecoderCodec(objectMapper, clientCodecConfigurer))
+                .build();
+    }
+
+    private void registerJacksonDecoderCodec(ObjectMapper objectMapper, ClientCodecConfigurer clientCodecConfigurer) {
+        clientCodecConfigurer.defaultCodecs().jackson2JsonDecoder(new Jackson2JsonDecoder(objectMapper, MediaType.ALL));
     }
 }
