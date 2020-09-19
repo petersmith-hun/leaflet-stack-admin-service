@@ -49,7 +49,7 @@ public class DockerEngineController {
     }
 
     /**
-     * GET /containers/details?ids=...
+     * GET /lsas/containers/details?ids=...
      * Returns detailed information about the specified containers as streaming data.
      *
      * @param containerIDList list of container ID strings as provided by Docker
@@ -62,7 +62,7 @@ public class DockerEngineController {
     }
 
     /**
-     * GET /containers/stats?ids=...
+     * GET /lsas/containers/stats?ids=...
      * Returns statistics about the specified containers as streaming data.
      *
      * @param containerIDList container ID strings as provided by Docker

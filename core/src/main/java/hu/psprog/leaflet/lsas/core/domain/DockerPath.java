@@ -1,7 +1,7 @@
 package hu.psprog.leaflet.lsas.core.domain;
 
 /**
- * Known and user Docker Engine API paths.
+ * Known and used Docker Engine API paths.
  *
  * @author Peter Smith
  */

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import java.util.Optional;
 
 /**
- * Utility class to calculate memory usage of Docker containers..
+ * Utility class to calculate memory usage of Docker containers.
  *
  * @author Peter Smith
  */
