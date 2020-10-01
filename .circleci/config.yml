@@ -49,7 +49,7 @@ jobs:
   # Leaflet Stack Admin Service - Build and test application
   build:
     docker:
-      - image: cimg/openjdk:11.0.6
+      - image: cimg/openjdk:11.0.8
     steps:
       - checkout
       - run:
@@ -93,7 +93,7 @@ jobs:
   # Leaflet Stack Admin Service - Deploy to production
   deploy:
     docker:
-      - image: cimg/openjdk:11.0.6
+      - image: cimg/openjdk:11.0.8
     steps:
       - attach_workspace:
           at: << pipeline.parameters.workspace_dir >>
