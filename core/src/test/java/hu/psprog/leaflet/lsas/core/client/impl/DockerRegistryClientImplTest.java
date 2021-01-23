@@ -1,0 +1,179 @@
+package hu.psprog.leaflet.lsas.core.client.impl;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import hu.psprog.leaflet.lsas.core.client.DockerRegistryClient;
+import hu.psprog.leaflet.lsas.core.config.ServiceRegistrations;
+import hu.psprog.leaflet.lsas.core.dockerapi.DockerRepositories;
+import hu.psprog.leaflet.lsas.core.dockerapi.DockerTagManifest;
+import hu.psprog.leaflet.lsas.core.dockerapi.DockerTags;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Mono;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+/**
+ * Unit tests for {@link DockerRegistryClientImpl}.
+ *
+ * @author Peter Smith
+ */
+@ExtendWith(MockitoExtension.class)
+class DockerRegistryClientImplTest {
+
+    private static final ServiceRegistrations SERVICE_REGISTRATIONS = prepareConfig();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private static final String REGISTRY_ID_1 = "registry-1";
+    private static final String REGISTRY_ID_2 = "registry-2";
+    private static final String REPOSITORY_ID = "repository-1";
+    private static final String TAG = "latest";
+    private static final DockerRepositories DOCKER_REPOSITORIES = DockerRepositories.getBuilder()
+            .withRepositories(Arrays.asList("lcfa", "leaflet", "lms"))
+            .build();
+    private static final DockerTags DOCKER_TAGS = DockerTags.getBuilder()
+            .withName(REPOSITORY_ID)
+            .withTags(Arrays.asList("1.0", "2.0", "latest"))
+            .build();
+    private static final DockerTagManifest DOCKER_TAG_MANIFEST = new DockerTagManifest(TAG,
+            Collections.singletonList(new DockerTagManifest.DockerTagHistory("tag-history")));
+
+    private static WireMockServer wireMockServerRegistry1;
+    private static WireMockServer wireMockServerRegistry2;
+    private static DockerRegistryClient dockerRegistryClient =
+            new DockerRegistryClientImpl(SERVICE_REGISTRATIONS, OBJECT_MAPPER);
+
+    @BeforeAll
+    public static void setupClass() {
+        wireMockServerRegistry1 = new WireMockServer(wireMockConfig().port(9999));
+        wireMockServerRegistry1.start();
+        wireMockServerRegistry2 = new WireMockServer(wireMockConfig().port(9998));
+        wireMockServerRegistry2.start();
+    }
+
+    @AfterAll
+    public static void tearDownClass() {
+        wireMockServerRegistry1.stop();
+        wireMockServerRegistry2.stop();
+    }
+
+    @AfterEach
+    public void tearDown() {
+        wireMockServerRegistry1.resetAll();
+        wireMockServerRegistry2.resetAll();
+    }
+
+    @Test
+    public void shouldGetRepositories() {
+
+        // given
+        wireMockServerRegistry1.givenThat(get(urlEqualTo("/v2/_catalog"))
+                .willReturn(ResponseDefinitionBuilder.okForJson(DOCKER_REPOSITORIES)));
+
+        // when
+        Mono<DockerRepositories> result = dockerRegistryClient.getRepositories(REGISTRY_ID_1);
+
+        // then
+        assertThat(result.block(), equalTo(DOCKER_REPOSITORIES));
+        verifyAuthorization(wireMockServerRegistry1);
+    }
+
+    @Test
+    public void shouldGetRepositoriesThrowExceptionWhenUnknownClientIsRequested() {
+
+        // when
+        assertThrows(IllegalArgumentException.class,
+                () -> dockerRegistryClient.getRepositories("non-existing-registry"));
+
+        // then
+        // exception expected
+    }
+
+    @Test
+    public void shouldGetRepositoryTags() {
+
+        // given
+        wireMockServerRegistry1.givenThat(get(urlEqualTo("/v2/repository-1/tags/list"))
+                .willReturn(ResponseDefinitionBuilder.okForJson(DOCKER_TAGS)));
+
+        // when
+        Mono<DockerTags> result = dockerRegistryClient.getRepositoryTags(REGISTRY_ID_1, REPOSITORY_ID);
+
+        // then
+        assertThat(result.block(), equalTo(DOCKER_TAGS));
+        verifyAuthorization(wireMockServerRegistry1);
+    }
+
+    @Test
+    public void shouldGetTagManifest() {
+
+        // given
+        wireMockServerRegistry2.givenThat(get(urlEqualTo("/v2/repository-1/manifests/latest"))
+                .willReturn(ResponseDefinitionBuilder.okForJson(DOCKER_TAG_MANIFEST)));
+
+        // when
+        Mono<DockerTagManifest> result = dockerRegistryClient.getTagManifest(REGISTRY_ID_2, REPOSITORY_ID, TAG);
+
+        // then
+        assertThat(result.block(), equalTo(DOCKER_TAG_MANIFEST));
+        verifyAuthorization(wireMockServerRegistry2);
+    }
+
+    @Test
+    public void shouldGetTagManifestThrowExceptionWhenResponseBodyIsMalformed() {
+
+        // given
+        wireMockServerRegistry2.givenThat(get(urlEqualTo("/v2/repository-1/manifests/latest"))
+                .willReturn(ResponseDefinitionBuilder.okForJson(Map.of("history", "value"))));
+
+        // when
+        assertThrows(RuntimeException.class,
+                () -> dockerRegistryClient.getTagManifest(REGISTRY_ID_2, REPOSITORY_ID, TAG).block());
+
+        // then
+        // exception expected
+    }
+
+    private static ServiceRegistrations prepareConfig() {
+
+        ServiceRegistrations serviceRegistrations = new ServiceRegistrations();
+        ServiceRegistrations.DockerIntegration dockerIntegration = new ServiceRegistrations.DockerIntegration();
+        ServiceRegistrations.DockerRegistry dockerRegistry1 = new ServiceRegistrations.DockerRegistry();
+        dockerRegistry1.setHost("http://localhost:9999");
+        dockerRegistry1.setUsername("user-1");
+        dockerRegistry1.setPassword("pass-1");
+        ServiceRegistrations.DockerRegistry dockerRegistry2 = new ServiceRegistrations.DockerRegistry();
+        dockerRegistry2.setHost("http://localhost:9998");
+        dockerRegistry2.setUsername("user-1");
+        dockerRegistry2.setPassword("pass-1");
+
+        dockerIntegration.getRegistryCatalog().put(REGISTRY_ID_1, dockerRegistry1);
+        dockerIntegration.getRegistryCatalog().put(REGISTRY_ID_2, dockerRegistry2);
+        serviceRegistrations.setDockerIntegration(dockerIntegration);
+
+        return serviceRegistrations;
+    }
+
+    private void verifyAuthorization(WireMockServer wireMockServer) {
+
+        wireMockServer.verify(anyRequestedFor(anyUrl())
+                .withHeader("Authorization", WireMock.equalTo("Basic dXNlci0xOnBhc3MtMQ==")));
+    }
+}
