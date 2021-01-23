@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.common.Json;
 import hu.psprog.leaflet.lsas.core.client.DockerRegistryClient;
 import hu.psprog.leaflet.lsas.core.config.ServiceRegistrations;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerRepositories;
@@ -15,6 +16,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.util.MimeType;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -39,7 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class DockerRegistryClientImplTest {
 
     private static final ServiceRegistrations SERVICE_REGISTRATIONS = prepareConfig();
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final Jackson2JsonDecoder DOCKER_MANIFEST_DECODER =
+            new Jackson2JsonDecoder(new ObjectMapper(), new MimeType("application", "vnd.docker.distribution.manifest.v1+prettyjws"));
 
     private static final String REGISTRY_ID_1 = "registry-1";
     private static final String REGISTRY_ID_2 = "registry-2";
@@ -52,13 +56,18 @@ class DockerRegistryClientImplTest {
             .withName(REPOSITORY_ID)
             .withTags(Arrays.asList("1.0", "2.0", "latest"))
             .build();
-    private static final DockerTagManifest DOCKER_TAG_MANIFEST = new DockerTagManifest(TAG,
-            Collections.singletonList(new DockerTagManifest.DockerTagHistory("tag-history")));
+    private static final DockerTagManifest.DockerTagHistory DOCKER_TAG_HISTORY = new DockerTagManifest.DockerTagHistory("tag-history");
+    private static final DockerTagManifest DOCKER_TAG_MANIFEST_RESPONSE = new DockerTagManifest(TAG, Collections.singletonList(DOCKER_TAG_HISTORY));
+    private static final DockerTagManifest DOCKER_TAG_MANIFEST_EXPECTED = new DockerTagManifest(TAG, Collections.singletonList(DOCKER_TAG_HISTORY));
+
+    static {
+        DOCKER_TAG_MANIFEST_EXPECTED.setDigest("tag-digest");
+    }
 
     private static WireMockServer wireMockServerRegistry1;
     private static WireMockServer wireMockServerRegistry2;
     private static DockerRegistryClient dockerRegistryClient =
-            new DockerRegistryClientImpl(SERVICE_REGISTRATIONS, OBJECT_MAPPER);
+            new DockerRegistryClientImpl(SERVICE_REGISTRATIONS, DOCKER_MANIFEST_DECODER);
 
     @BeforeAll
     public static void setupClass() {
@@ -126,13 +135,17 @@ class DockerRegistryClientImplTest {
 
         // given
         wireMockServerRegistry2.givenThat(get(urlEqualTo("/v2/repository-1/manifests/latest"))
-                .willReturn(ResponseDefinitionBuilder.okForJson(DOCKER_TAG_MANIFEST)));
+                .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                        .withHeader("Content-Type", "application/json")
+                        .withHeader("Docker-Content-Digest", "tag-digest")
+                        .withStatus(200)
+                        .withBody(Json.write(DOCKER_TAG_MANIFEST_RESPONSE))));
 
         // when
         Mono<DockerTagManifest> result = dockerRegistryClient.getTagManifest(REGISTRY_ID_2, REPOSITORY_ID, TAG);
 
         // then
-        assertThat(result.block(), equalTo(DOCKER_TAG_MANIFEST));
+        assertThat(result.block(), equalTo(DOCKER_TAG_MANIFEST_EXPECTED));
         verifyAuthorization(wireMockServerRegistry2);
     }
 

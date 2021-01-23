@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ClientCodecConfigurer;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.util.MimeType;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import javax.ws.rs.client.Client;
@@ -46,6 +47,11 @@ public class ServiceConfiguration {
                 .baseUrl(serviceRegistrations.getDockerIntegration().getEngineHost())
                 .codecs(clientCodecConfigurer -> registerJacksonDecoderCodec(objectMapper, clientCodecConfigurer))
                 .build();
+    }
+
+    @Bean
+    public Jackson2JsonDecoder dockerManifestDecoder(ObjectMapper objectMapper) {
+        return new Jackson2JsonDecoder(objectMapper, new MimeType("application", "vnd.docker.distribution.manifest.v1+prettyjws"));
     }
 
     private void registerJacksonDecoderCodec(ObjectMapper objectMapper, ClientCodecConfigurer clientCodecConfigurer) {

@@ -7,6 +7,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Model class representing the response of a Docker tag manifest request.
@@ -17,6 +18,7 @@ public class DockerTagManifest {
 
     private final String tag;
     private final List<DockerTagHistory> history;
+    private String digest;
 
     @JsonCreator
     public DockerTagManifest(@JsonProperty("tag") String tag, @JsonProperty("history") List<DockerTagHistory> history) {
@@ -32,6 +34,16 @@ public class DockerTagManifest {
         return history;
     }
 
+    public String getDigest() {
+        return digest;
+    }
+
+    public void setDigest(String digest) {
+        if (Objects.isNull(this.digest)) {
+            this.digest = digest;
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -43,6 +55,7 @@ public class DockerTagManifest {
         return new EqualsBuilder()
                 .append(tag, that.tag)
                 .append(history, that.history)
+                .append(digest, that.digest)
                 .isEquals();
     }
 
@@ -51,6 +64,7 @@ public class DockerTagManifest {
         return new HashCodeBuilder(17, 37)
                 .append(tag)
                 .append(history)
+                .append(digest)
                 .toHashCode();
     }
 
@@ -59,6 +73,7 @@ public class DockerTagManifest {
         return new ToStringBuilder(this)
                 .append("tag", tag)
                 .append("history", history)
+                .append("digest", digest)
                 .toString();
     }
 

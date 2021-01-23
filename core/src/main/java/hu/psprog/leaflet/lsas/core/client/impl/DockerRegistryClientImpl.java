@@ -1,7 +1,5 @@
 package hu.psprog.leaflet.lsas.core.client.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import hu.psprog.leaflet.lsas.core.client.DockerRegistryClient;
 import hu.psprog.leaflet.lsas.core.config.ServiceRegistrations;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerRepositories;
@@ -10,6 +8,7 @@ import hu.psprog.leaflet.lsas.core.dockerapi.DockerTags;
 import hu.psprog.leaflet.lsas.core.domain.DockerRegistryPath;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Base64Utils;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -28,12 +27,10 @@ import java.util.stream.Collectors;
 public class DockerRegistryClientImpl implements DockerRegistryClient {
 
     private final Map<String, WebClient> clientMap;
-    private final ObjectMapper objectMapper;
 
     @Autowired
-    public DockerRegistryClientImpl(ServiceRegistrations serviceRegistrations, ObjectMapper objectMapper) {
-        this.clientMap = prepareClientMap(serviceRegistrations);
-        this.objectMapper = objectMapper;
+    public DockerRegistryClientImpl(ServiceRegistrations serviceRegistrations, Jackson2JsonDecoder dockerManifestDecoder) {
+        this.clientMap = prepareClientMap(serviceRegistrations, dockerManifestDecoder);
     }
 
     @Override
@@ -63,13 +60,12 @@ public class DockerRegistryClientImpl implements DockerRegistryClient {
                 .method(HttpMethod.GET)
                 .uri(String.format(DockerRegistryPath.TAG_MANIFEST.getUri(), repositoryID, tag))
                 .retrieve()
-                .bodyToMono(String.class)
-                .map(responseContent -> {
-                    try {
-                        return objectMapper.readValue(responseContent, DockerTagManifest.class);
-                    } catch (JsonProcessingException e) {
-                        throw new RuntimeException("Failed to read Docker Registry manifest response", e);
-                    }
+                .toEntity(DockerTagManifest.class)
+                .map(responseEntity -> {
+                    DockerTagManifest manifest = responseEntity.getBody();
+                    manifest.setDigest(responseEntity.getHeaders().getFirst("Docker-Content-Digest"));
+
+                    return manifest;
                 });
     }
 
@@ -83,22 +79,25 @@ public class DockerRegistryClientImpl implements DockerRegistryClient {
         return selectedWebClient;
     }
 
-    private Map<String, WebClient> prepareClientMap(ServiceRegistrations serviceRegistrations) {
+    private Map<String, WebClient> prepareClientMap(ServiceRegistrations serviceRegistrations, Jackson2JsonDecoder dockerManifestDecoder) {
 
         return serviceRegistrations.getDockerIntegration()
                 .getRegistryCatalog()
                 .entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, this::buildWebClient));
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> buildWebClient(entry.getValue(), dockerManifestDecoder)));
     }
 
-    private WebClient buildWebClient(Map.Entry<String, ServiceRegistrations.DockerRegistry> entry) {
+    private WebClient buildWebClient(ServiceRegistrations.DockerRegistry dockerRegistry, Jackson2JsonDecoder dockerManifestDecoder) {
 
-        String basicAuth = String.format("%s:%s", entry.getValue().getUsername(), entry.getValue().getPassword());
+        String basicAuth = String.format("%s:%s", dockerRegistry.getUsername(), dockerRegistry.getPassword());
         String authHeader = String.format("Basic %s", Base64Utils.encodeToString(basicAuth.getBytes()));
 
         return WebClient.builder()
-                .baseUrl(entry.getValue().getHost())
+                .baseUrl(dockerRegistry.getHost())
                 .defaultHeader("Authorization", authHeader)
+                .codecs(clientCodecConfigurer -> clientCodecConfigurer
+                        .customCodecs()
+                        .registerWithDefaultConfig(dockerManifestDecoder))
                 .build();
     }
 }
