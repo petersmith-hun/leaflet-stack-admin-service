@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -60,13 +61,32 @@ public class DockerRegistryClientImpl implements DockerRegistryClient {
                 .method(HttpMethod.GET)
                 .uri(String.format(DockerRegistryPath.TAG_MANIFEST.getUri(), repositoryID, tag))
                 .retrieve()
-                .toEntity(DockerTagManifest.class)
-                .map(responseEntity -> {
-                    DockerTagManifest manifest = responseEntity.getBody();
-                    manifest.setDigest(responseEntity.getHeaders().getFirst("Docker-Content-Digest"));
+                .bodyToMono(DockerTagManifest.class);
+    }
 
-                    return manifest;
-                });
+    @Override
+    public Mono<String> getTagDigest(String registryID, String repositoryID, String tag) {
+
+        return getWebClient(registryID)
+                .method(HttpMethod.GET)
+                .uri(String.format(DockerRegistryPath.TAG_MANIFEST.getUri(), repositoryID, tag))
+                .header("Accept", "application/vnd.docker.distribution.manifest.v2+json")
+                .retrieve()
+                .toEntity(Void.class)
+                .map(responseEntity -> Optional
+                        .ofNullable(responseEntity.getHeaders().getFirst("Docker-Content-Digest"))
+                        .orElse("unknown"));
+    }
+
+    @Override
+    public void deleteTagByDigest(String registryID, String repositoryID, String tagDigest) {
+
+        getWebClient(registryID)
+                .method(HttpMethod.DELETE)
+                .uri(String.format(DockerRegistryPath.TAG_MANIFEST.getUri(), repositoryID, tagDigest))
+                .retrieve()
+                .toBodilessEntity()
+                .subscribe();
     }
 
     private WebClient getWebClient(String registryID) {

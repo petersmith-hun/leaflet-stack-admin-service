@@ -29,6 +29,7 @@ import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 /**
  * Unit tests for {@link DockerRegistryServiceImpl}.
@@ -127,6 +128,24 @@ class DockerRegistryServiceImplTest {
         assertThat(result.getTags(), hasSize(4));
         assertThat(result.getTags().stream().map(DockerTag::getName).collect(Collectors.toList()),
                 equalTo(Arrays.asList("latest", "3.0", "2.0", "1.0")));
+    }
+
+    @Test
+    public void shouldDeleteImageByTag() {
+
+        // given
+        String registryID = "leaflet";
+        String repositoryID = "cbfs";
+        String tag = "1.0";
+        String tagDigest = "1.0-digest";
+
+        given(dockerRegistryClient.getTagDigest(registryID, repositoryID, tag)).willReturn(Mono.just(tagDigest));
+
+        // when
+        dockerRegistryService.deleteImageByTag(registryID, repositoryID, tag);
+
+        // then
+        verify(dockerRegistryClient).deleteTagByDigest(registryID, repositoryID, tagDigest);
     }
 
     private DockerTagManifest prepareManifest(String tag, int dayOffset) {

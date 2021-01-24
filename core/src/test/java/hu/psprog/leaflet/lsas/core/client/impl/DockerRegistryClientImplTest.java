@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.common.Json;
 import hu.psprog.leaflet.lsas.core.client.DockerRegistryClient;
 import hu.psprog.leaflet.lsas.core.config.ServiceRegistrations;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerRepositories;
@@ -26,7 +25,10 @@ import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -57,12 +59,8 @@ class DockerRegistryClientImplTest {
             .withTags(Arrays.asList("1.0", "2.0", "latest"))
             .build();
     private static final DockerTagManifest.DockerTagHistory DOCKER_TAG_HISTORY = new DockerTagManifest.DockerTagHistory("tag-history");
-    private static final DockerTagManifest DOCKER_TAG_MANIFEST_RESPONSE = new DockerTagManifest(TAG, Collections.singletonList(DOCKER_TAG_HISTORY));
-    private static final DockerTagManifest DOCKER_TAG_MANIFEST_EXPECTED = new DockerTagManifest(TAG, Collections.singletonList(DOCKER_TAG_HISTORY));
-
-    static {
-        DOCKER_TAG_MANIFEST_EXPECTED.setDigest("tag-digest");
-    }
+    private static final DockerTagManifest DOCKER_TAG_MANIFEST = new DockerTagManifest(TAG, Collections.singletonList(DOCKER_TAG_HISTORY));
+    private static final String TAG_DIGEST = "tag-digest";
 
     private static WireMockServer wireMockServerRegistry1;
     private static WireMockServer wireMockServerRegistry2;
@@ -135,17 +133,13 @@ class DockerRegistryClientImplTest {
 
         // given
         wireMockServerRegistry2.givenThat(get(urlEqualTo("/v2/repository-1/manifests/latest"))
-                .willReturn(ResponseDefinitionBuilder.responseDefinition()
-                        .withHeader("Content-Type", "application/json")
-                        .withHeader("Docker-Content-Digest", "tag-digest")
-                        .withStatus(200)
-                        .withBody(Json.write(DOCKER_TAG_MANIFEST_RESPONSE))));
+                .willReturn(ResponseDefinitionBuilder.okForJson(DOCKER_TAG_MANIFEST)));
 
         // when
         Mono<DockerTagManifest> result = dockerRegistryClient.getTagManifest(REGISTRY_ID_2, REPOSITORY_ID, TAG);
 
         // then
-        assertThat(result.block(), equalTo(DOCKER_TAG_MANIFEST_EXPECTED));
+        assertThat(result.block(), equalTo(DOCKER_TAG_MANIFEST));
         verifyAuthorization(wireMockServerRegistry2);
     }
 
@@ -162,6 +156,42 @@ class DockerRegistryClientImplTest {
 
         // then
         // exception expected
+    }
+
+    @Test
+    public void shouldGetTagDigest() {
+
+        // given
+        String tagManifestPath = "/v2/repository-1/manifests/latest";
+        wireMockServerRegistry2.givenThat(get(urlEqualTo(tagManifestPath))
+                .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                        .withHeader("Content-Type", "application/json")
+                        .withHeader("Docker-Content-Digest", TAG_DIGEST)
+                        .withStatus(200)));
+
+        // when
+        Mono<String> result = dockerRegistryClient.getTagDigest(REGISTRY_ID_2, REPOSITORY_ID, TAG);
+
+        // then
+        assertThat(result.block(), equalTo(TAG_DIGEST));
+        wireMockServerRegistry2.verify(getRequestedFor(urlEqualTo(tagManifestPath))
+                .withHeader("Accept", WireMock.equalTo("application/vnd.docker.distribution.manifest.v2+json")));
+    }
+
+    @Test
+    public void shouldDeleteTagByDigest() throws InterruptedException {
+
+        // given
+        String tagDigestPath = "/v2/repository-1/manifests/tag-digest";
+        wireMockServerRegistry1.givenThat(delete(urlEqualTo(tagDigestPath))
+                .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(204)));
+
+        // when
+        dockerRegistryClient.deleteTagByDigest(REGISTRY_ID_1, REPOSITORY_ID, TAG_DIGEST);
+
+        // then
+        Thread.sleep(300);
+        wireMockServerRegistry1.verify(deleteRequestedFor(urlEqualTo(tagDigestPath)));
     }
 
     private static ServiceRegistrations prepareConfig() {

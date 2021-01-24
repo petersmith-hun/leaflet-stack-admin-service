@@ -5,6 +5,7 @@ import hu.psprog.leaflet.lsas.core.domain.DockerRepository;
 import hu.psprog.leaflet.lsas.core.service.DockerRegistryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -78,5 +79,42 @@ public class DockerRegistryController {
     public Mono<DockerRepository> getRepositoryTags(@PathVariable String registryID, @PathVariable String group, @PathVariable String repository) {
 
         return dockerRegistryService.getRepositoryDetails(registryID, String.format("%s/%s", group, repository));
+    }
+
+    /**
+     * Deletes the given version (tag) of the specified repository.
+     *
+     * @param registryID registry in which the image is located
+     * @param repository ID of the repository in which the tag is located
+     * @param tag tag of the image to be deleted
+     * @return empty {@link ResponseEntity} with HTTP 204 No content response
+     */
+    @DeleteMapping("/{registryID}/{repository}/{tag}")
+    public ResponseEntity<Void> deleteImageByTag(@PathVariable String registryID, @PathVariable String repository, @PathVariable String tag) {
+
+        dockerRegistryService.deleteImageByTag(registryID, repository, tag);
+
+        return ResponseEntity
+                .noContent()
+                .build();
+    }
+
+    /**
+     * Deletes the given version (tag) of the specified repository.
+     *
+     * @param registryID registry in which the image is located
+     * @param group group (organization) in which the repository to be queried is located
+     * @param repository ID of the repository in which the tag is located
+     * @param tag tag of the image to be deleted
+     * @return empty {@link ResponseEntity} with HTTP 204 No content response
+     */
+    @DeleteMapping("/{registryID}/{group}/{repository}/{tag}")
+    public ResponseEntity<Void> deleteImageByTag(@PathVariable String registryID, @PathVariable String group, @PathVariable String repository, @PathVariable String tag) {
+
+        dockerRegistryService.deleteImageByTag(registryID, String.format("%s/%s", group, repository), tag);
+
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

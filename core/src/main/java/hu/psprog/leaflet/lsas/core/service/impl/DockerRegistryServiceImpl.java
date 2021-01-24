@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -55,6 +56,7 @@ public class DockerRegistryServiceImpl implements DockerRegistryService {
     public Mono<DockerRepository> getRepositoryDetails(String registryID, String repositoryID) {
 
         return dockerRegistryClient.getRepositoryTags(registryID, repositoryID)
+                .filter(dockerTags -> Objects.nonNull(dockerTags.getTags()))
                 .map(DockerTags::getTags)
                 .flatMapMany(Flux::fromIterable)
                 .flatMap(tag -> dockerRegistryClient.getTagManifest(registryID, repositoryID, tag))
@@ -65,6 +67,14 @@ public class DockerRegistryServiceImpl implements DockerRegistryService {
                         .reversed())
                 .collectList()
                 .map(dockerTags -> new DockerRepository(registryID, repositoryID, dockerTags));
+    }
+
+    @Override
+    public void deleteImageByTag(String registryID, String repositoryID, String tag) {
+
+        dockerRegistryClient.getTagDigest(registryID, repositoryID, tag)
+                .subscribe(dockerTagDigest -> dockerRegistryClient
+                        .deleteTagByDigest(registryID, repositoryID, dockerTagDigest));
     }
 
     private Map<String, String> createSimpleRegistryMap(ServiceRegistrations serviceRegistrations) {

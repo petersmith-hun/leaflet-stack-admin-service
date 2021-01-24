@@ -36,4 +36,13 @@ public interface DockerRegistryService {
      * @return repository details (including available tags) as {@link DockerRepository} object wrapped in {@link Mono}
      */
     Mono<DockerRepository> getRepositoryDetails(String registryID, String repositoryID);
+
+    /**
+     * Deletes the given version (tag) of the specified repository.
+     *
+     * @param registryID registry in which the image is located
+     * @param repositoryID ID of the repository in which the tag is located
+     * @param tag tag of the image to be deleted
+     */
+    void deleteImageByTag(String registryID, String repositoryID, String tag);
 }
