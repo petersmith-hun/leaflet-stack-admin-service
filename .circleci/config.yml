@@ -66,7 +66,7 @@ jobs:
           command: mvn build-helper:parse-version versions:set -DnewVersion="\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.incrementalVersion}.${BUILD_NUMBER}" -s .circleci/settings.xml
           name: Set project version
       - run:
-          command: echo 'export PROJECT_VERSION=`mvn help:evaluate -Dexpression=project.version -q -DforceStdout --non-recursive`' >> $BASH_ENV
+          command: echo 'export PROJECT_VERSION=`mvn help:evaluate -Dexpression=project.version -q -DforceStdout --non-recursive -s .circleci/settings.xml`' >> $BASH_ENV
           name: Extract project version
       - setup_remote_docker:
           version: 19.03.12
@@ -103,6 +103,8 @@ jobs:
           name: Set project version
       - run:
           command: |
+            set +e
+
             domino_deploy_response=$(curl \
                  --silent --write-out "%{http_code}" --output /dev/null \
                  --request PUT \
