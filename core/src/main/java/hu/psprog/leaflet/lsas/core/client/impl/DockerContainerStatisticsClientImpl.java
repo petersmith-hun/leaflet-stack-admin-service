@@ -5,6 +5,7 @@ import hu.psprog.leaflet.lsas.core.dockerapi.ContainerDetailsModel;
 import hu.psprog.leaflet.lsas.core.dockerapi.ContainerModel;
 import hu.psprog.leaflet.lsas.core.dockerapi.ContainerRuntimeStatsModel;
 import hu.psprog.leaflet.lsas.core.domain.DockerPath;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import java.util.List;
  * @author Peter Smith
  */
 @Component
+@Slf4j
 public class DockerContainerStatisticsClientImpl implements DockerContainerStatisticsClient {
 
     private static final ParameterizedTypeReference<List<ContainerModel>> CONTAINER_MODEL_LIST_TYPEREF
@@ -50,7 +52,10 @@ public class DockerContainerStatisticsClientImpl implements DockerContainerStati
                 .uri(DockerPath.CONTAINER_DETAILS.getURI(), containerID)
                 .retrieve()
                 .bodyToMono(ContainerDetailsModel.class)
-                .onErrorResume(throwable -> Mono.empty());
+                .onErrorResume(throwable -> {
+                    log.error(String.format("Failed to retrieve details for container=[%s]", containerID), throwable);
+                    return Mono.empty();
+                });
     }
 
     @Override
@@ -61,6 +66,9 @@ public class DockerContainerStatisticsClientImpl implements DockerContainerStati
                 .uri(DockerPath.CONTAINER_STATS.getURI(), containerID)
                 .retrieve()
                 .bodyToFlux(ContainerRuntimeStatsModel.class)
-                .onErrorResume(throwable -> Flux.empty());
+                .onErrorResume(throwable -> {
+                    log.error(String.format("Failed to retrieve statistics for container=[%s]", containerID), throwable);
+                    return Flux.empty();
+                });
     }
 }
