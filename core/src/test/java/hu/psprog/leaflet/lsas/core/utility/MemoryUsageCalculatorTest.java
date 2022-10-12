@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -62,6 +63,7 @@ class MemoryUsageCalculatorTest {
 
         return Stream.of(
                 Arguments.arguments(memoryStatsModel(104857600L, 0L, 0L), 100),
+                Arguments.arguments(memoryStatsModel(104857600L, null, 0L), 100),
                 Arguments.arguments(memoryStatsModel(104857000L, 0L, 0L), 99),
                 Arguments.arguments(memoryStatsModel(104857600L, 10485760L, 0L), 90),
                 Arguments.arguments(null, 0)
@@ -72,6 +74,7 @@ class MemoryUsageCalculatorTest {
 
         return Stream.of(
                 Arguments.arguments(memoryStatsModel(104857600L, 0L, 3221225472L), 3.26),
+                Arguments.arguments(memoryStatsModel(104857600L, null, 3221225472L), 3.26),
                 Arguments.arguments(memoryStatsModel(104857600L, 10485760L, 188743680L), 50.0),
                 Arguments.arguments(memoryStatsModel(104857600L, 0L, 0L), 0.0),
                 Arguments.arguments(null, 0.0)
@@ -80,9 +83,12 @@ class MemoryUsageCalculatorTest {
 
     private static MemoryStatsModel memoryStatsModel(Long usage, Long cache, Long limit) {
 
+        Map<String, Object> statsMap = new HashMap<>();
+        statsMap.put("cache", cache);
+
         return MemoryStatsModel.builder()
                 .usage(usage)
-                .stats(Map.of("cache", cache))
+                .stats(statsMap)
                 .limit(limit)
                 .build();
     }
