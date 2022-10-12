@@ -69,8 +69,17 @@ public class ServiceRegistrations {
      */
     public static class DockerIntegration {
 
+        private IntegrationMode integrationMode = IntegrationMode.TCP;
         private String engineHost;
         private final Map<String, DockerRegistry> registryCatalog = new HashMap<>();
+
+        public IntegrationMode getIntegrationMode() {
+            return integrationMode;
+        }
+
+        public void setIntegrationMode(IntegrationMode integrationMode) {
+            this.integrationMode = integrationMode;
+        }
 
         public String getEngineHost() {
             return engineHost;
@@ -93,6 +102,7 @@ public class ServiceRegistrations {
             DockerIntegration that = (DockerIntegration) o;
 
             return new EqualsBuilder()
+                    .append(integrationMode, that.integrationMode)
                     .append(engineHost, that.engineHost)
                     .append(registryCatalog, that.registryCatalog)
                     .isEquals();
@@ -101,6 +111,7 @@ public class ServiceRegistrations {
         @Override
         public int hashCode() {
             return new HashCodeBuilder(17, 37)
+                    .append(integrationMode)
                     .append(engineHost)
                     .append(registryCatalog)
                     .toHashCode();
@@ -109,9 +120,15 @@ public class ServiceRegistrations {
         @Override
         public String toString() {
             return new ToStringBuilder(this)
+                    .append("integrationMode", integrationMode)
                     .append("engineHost", engineHost)
                     .append("registryCatalog", registryCatalog)
                     .toString();
+        }
+
+        public enum IntegrationMode {
+            SOCKET,
+            TCP
         }
     }
 
