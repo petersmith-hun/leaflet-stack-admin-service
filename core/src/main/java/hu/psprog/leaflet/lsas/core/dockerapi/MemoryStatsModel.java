@@ -10,6 +10,7 @@ import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Model class representing a Docker container's memory usage statistics information.
@@ -53,7 +54,12 @@ public class MemoryStatsModel {
 
         @JsonProperty("stats")
         public MemoryStatsModelBuilder stats(Map<String, Object> stats) {
-            this.cache = Long.valueOf(String.valueOf(stats.get("cache")));
+
+            this.cache = Optional.ofNullable(stats.get("cache"))
+                    .map(String::valueOf)
+                    .map(Long::valueOf)
+                    .orElse(0L);
+
             return this;
         }
 
