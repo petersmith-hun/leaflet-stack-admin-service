@@ -107,18 +107,22 @@ jobs:
           command: |
             set +e
 
-            oauth_token_response=$(curl \
-                 --silent \
-                 --request POST "${LEAFLET_CI_DOMINO_OAUTH_TOKEN_ENDPOINT}" \
-                 --header "Authorization: Basic ${LEAFLET_CI_DOMINO_OAUTH_CLIENT_AUTH}" \
-                 --form "client_id=${LEAFLET_CI_DOMINO_OAUTH_CLIENT_ID}" \
-                 --form "scope=${LEAFLET_CI_DOMINO_OAUTH_SCOPE}" \
-                 --form "audience=${LEAFLET_CI_DOMINO_OAUTH_AUDIENCE}" \
-                 --form "grant_type=${LEAFLET_CI_DOMINO_OAUTH_GRANT_TYPE}" | jq -r '.access_token')
-
-            if [[ $oauth_token_response == "null" ]]
+            oauth_token_response=${LEAFLET_CI_DOMINO_AUTH_TOKEN}
+            if ! [[ $oauth_token_response ]]
             then
-              echo "Authorization failed" && exit 1
+                oauth_token_response=$(curl \
+                    --silent \
+                    --request POST "${LEAFLET_CI_DOMINO_OAUTH_TOKEN_ENDPOINT}" \
+                    --header "Authorization: Basic ${LEAFLET_CI_DOMINO_OAUTH_CLIENT_AUTH}" \
+                    --form "client_id=${LEAFLET_CI_DOMINO_OAUTH_CLIENT_ID}" \
+                    --form "scope=${LEAFLET_CI_DOMINO_OAUTH_SCOPE}" \
+                    --form "audience=${LEAFLET_CI_DOMINO_OAUTH_AUDIENCE}" \
+                    --form "grant_type=${LEAFLET_CI_DOMINO_OAUTH_GRANT_TYPE}" | jq -r '.access_token')
+            
+                if [[ $oauth_token_response == "null" ]]
+                then
+                  echo "Authorization failed" && exit 1
+                fi
             fi
 
             domino_deploy_response=$(curl \
