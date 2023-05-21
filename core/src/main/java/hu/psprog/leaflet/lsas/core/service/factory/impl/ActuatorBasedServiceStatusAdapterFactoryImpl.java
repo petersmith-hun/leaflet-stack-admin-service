@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.client.Client;
+import jakarta.ws.rs.client.Client;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,7 +22,7 @@ public class ActuatorBasedServiceStatusAdapterFactoryImpl implements ServiceStat
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActuatorBasedServiceStatusAdapterFactoryImpl.class);
 
-    private Client client;
+    private final Client client;
 
     @Autowired
     public ActuatorBasedServiceStatusAdapterFactoryImpl(Client client) {

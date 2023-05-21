@@ -2,9 +2,6 @@ package hu.psprog.leaflet.lsas.core.dockerapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
 
 import java.time.ZonedDateTime;
 import java.util.Map;
@@ -14,23 +11,13 @@ import java.util.Map;
  *
  * @author Peter Smith
  */
-@Getter
-@EqualsAndHashCode
-@ToString
 @JsonDeserialize(builder = ContainerDetailsModel.ContainerDetailsModelBuilder.class)
-public class ContainerDetailsModel {
-
-    private final String id;
-    private final String status;
-    private final String logPath;
-    private final ZonedDateTime startedAt;
-
-    private ContainerDetailsModel(ContainerDetailsModelBuilder builder) {
-        this.id = builder.id;
-        this.status = builder.status;
-        this.logPath = builder.logPath;
-        this.startedAt = builder.startedAt;
-    }
+public record ContainerDetailsModel(
+        String id,
+        String status,
+        String logPath,
+        ZonedDateTime startedAt
+) {
 
     public static ContainerDetailsModelBuilder builder() {
         return new ContainerDetailsModelBuilder();
@@ -69,7 +56,7 @@ public class ContainerDetailsModel {
         }
 
         public ContainerDetailsModel build() {
-            return new ContainerDetailsModel(this);
+            return new ContainerDetailsModel(id, status, logPath, startedAt);
         }
     }
 }

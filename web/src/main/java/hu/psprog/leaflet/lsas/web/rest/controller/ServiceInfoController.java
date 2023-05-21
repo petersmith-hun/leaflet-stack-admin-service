@@ -20,7 +20,7 @@ import reactor.core.publisher.Flux;
 @RequestMapping("/lsas/stack-status")
 public class ServiceInfoController {
 
-    private StackStatusService stackStatusService;
+    private final StackStatusService stackStatusService;
 
     @Autowired
     public ServiceInfoController(StackStatusService stackStatusService) {

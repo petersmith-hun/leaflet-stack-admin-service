@@ -5,8 +5,8 @@ import hu.psprog.leaflet.lsas.core.status.ServiceStatusAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.core.Response;
 
 /**
  * {@link ServiceStatusAdapter} implementation for services providing Spring Boot Actuator based status endpoints.
@@ -17,9 +17,9 @@ public class ActuatorBasedServiceStatusAdapter implements ServiceStatusAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActuatorBasedServiceStatusAdapter.class);
 
-    private Client client;
-    private String serviceAbbreviation;
-    private String statusURL;
+    private final Client client;
+    private final String serviceAbbreviation;
+    private final String statusURL;
     private final ServiceStatus defaultServiceStatus;
 
     public ActuatorBasedServiceStatusAdapter(Client client, String serviceAbbreviation, String statusURL) {
@@ -40,8 +40,7 @@ public class ActuatorBasedServiceStatusAdapter implements ServiceStatusAdapter {
         LOGGER.info("Calling service {} to request status", serviceAbbreviation);
 
         ServiceStatus serviceStatus = defaultServiceStatus;
-        try {
-            Response response = callService();
+        try (Response response = callService()) {
             if (response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
                 serviceStatus = response.readEntity(ServiceStatus.class);
             }

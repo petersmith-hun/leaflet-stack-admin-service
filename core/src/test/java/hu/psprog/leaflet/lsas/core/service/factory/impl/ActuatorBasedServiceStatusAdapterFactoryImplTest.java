@@ -9,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.ReflectionUtils;
 
-import javax.ws.rs.client.Client;
+import jakarta.ws.rs.client.Client;
 import java.lang.reflect.Field;
 import java.util.Comparator;
 import java.util.List;

@@ -48,7 +48,7 @@ public class DockerRegistryServiceImpl implements DockerRegistryService {
     public Mono<DockerRegistryContent> getRepositories(String registryID) {
 
         return dockerRegistryClient.getRepositories(registryID)
-                .map(DockerRepositories::getRepositories)
+                .map(DockerRepositories::repositories)
                 .map(repositories -> new DockerRegistryContent(registryID, repositories));
     }
 
@@ -56,14 +56,14 @@ public class DockerRegistryServiceImpl implements DockerRegistryService {
     public Mono<DockerRepository> getRepositoryDetails(String registryID, String repositoryID) {
 
         return dockerRegistryClient.getRepositoryTags(registryID, repositoryID)
-                .filter(dockerTags -> Objects.nonNull(dockerTags.getTags()))
-                .map(DockerTags::getTags)
+                .filter(dockerTags -> Objects.nonNull(dockerTags.tags()))
+                .map(DockerTags::tags)
                 .flatMapMany(Flux::fromIterable)
                 .flatMap(tag -> dockerRegistryClient.getTagManifest(registryID, repositoryID, tag))
                 .map(this::mapToDockerTag)
                 .sort(Comparator
-                        .comparing(DockerTag::getCreated)
-                        .thenComparing(DockerTag::getName)
+                        .comparing(DockerTag::created)
+                        .thenComparing(DockerTag::name)
                         .reversed())
                 .collectList()
                 .map(dockerTags -> new DockerRepository(registryID, repositoryID, dockerTags));
@@ -87,14 +87,14 @@ public class DockerRegistryServiceImpl implements DockerRegistryService {
 
     private DockerTag mapToDockerTag(DockerTagManifest dockerTagManifest) {
 
-        ZonedDateTime created = dockerTagManifest.getHistory().stream()
-                .map(DockerTagManifest.DockerTagHistory::getV1Compatibility)
+        ZonedDateTime created = dockerTagManifest.history().stream()
+                .map(DockerTagManifest.DockerTagHistory::v1Compatibility)
                 .map(metaString -> JsonPath.read(metaString, "$.created"))
                 .map(String::valueOf)
                 .map(ZonedDateTime::parse)
                 .max(Comparator.comparing(Function.identity()))
                 .orElse(null);
 
-        return new DockerTag(dockerTagManifest.getTag(), created);
+        return new DockerTag(dockerTagManifest.tag(), created);
     }
 }

@@ -17,11 +17,11 @@ public class ContainerConverter implements Converter<ContainerModel, Container> 
     public Container convert(ContainerModel containerModel) {
 
         return Container.builder()
-                .id(containerModel.getId())
-                .image(containerModel.getImage())
-                .state(containerModel.getState())
-                .names(containerModel.getNames())
-                .createTimestamp(containerModel.getCreatedTimestamp())
+                .id(containerModel.id())
+                .image(containerModel.image())
+                .state(containerModel.state())
+                .names(containerModel.names())
+                .createTimestamp(containerModel.createdTimestamp())
                 .build();
     }
 }

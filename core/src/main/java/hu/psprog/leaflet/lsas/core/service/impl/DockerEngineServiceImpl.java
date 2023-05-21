@@ -71,7 +71,7 @@ public class DockerEngineServiceImpl implements DockerEngineService {
     private Flux<ContainerDetails> getContainerDetails(String containerID) {
 
         return dockerContainerStatisticsClient.getContainerDetails(containerID)
-                .map(containerDetailsConverter::convert)
+                .mapNotNull(containerDetailsConverter::convert)
                 .repeatWhen(longFlux -> Flux.interval(POLL_FREQUENCY));
     }
 

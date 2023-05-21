@@ -110,7 +110,7 @@ class DockerEngineServiceImplTest {
         // then
         List<ContainerDetails> resultList = new ArrayList<>(2);
         result.doOnNext(resultList::add)
-                .limitRequest(2)
+                .take(2)
                 .blockLast();
         assertThat(resultList, hasItems(CONTAINER_DETAILS_1, CONTAINER_DETAILS_2));
     }
