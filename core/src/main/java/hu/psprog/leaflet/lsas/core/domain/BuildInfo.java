@@ -1,9 +1,6 @@
 package hu.psprog.leaflet.lsas.core.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
 
 import java.time.ZonedDateTime;
 
@@ -12,17 +9,12 @@ import java.time.ZonedDateTime;
  *
  * @author Peter Smith
  */
-@Getter
-@EqualsAndHashCode
-@ToString
-public class BuildInfo {
-
-    private ZonedDateTime time;
-    private String version;
+public record BuildInfo(
+        ZonedDateTime time,
+        String version
+) {
 
     @JsonCreator
-    public BuildInfo(ZonedDateTime time, String version) {
-        this.time = time;
-        this.version = version;
+    public BuildInfo {
     }
 }

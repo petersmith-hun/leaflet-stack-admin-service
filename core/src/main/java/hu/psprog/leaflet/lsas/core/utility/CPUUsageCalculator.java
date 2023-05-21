@@ -31,8 +31,8 @@ public class CPUUsageCalculator {
      */
     public Double calculateCPUUsagePercentage(ContainerRuntimeStatsModel containerRuntimeStatsModel) {
 
-        CPUStatsModel currentCPUStats = containerRuntimeStatsModel.getCurrentCPUStats();
-        CPUStatsModel previousCPUStats = containerRuntimeStatsModel.getPreviousCPUStats();
+        CPUStatsModel currentCPUStats = containerRuntimeStatsModel.currentCPUStats();
+        CPUStatsModel previousCPUStats = containerRuntimeStatsModel.previousCPUStats();
 
         double processCPUUsageDelta = calculateProcessCPUUsageDelta(currentCPUStats, previousCPUStats);
         double systemCPUUsageDelta = calculateSystemCPUUsageDelta(currentCPUStats, previousCPUStats);
@@ -43,11 +43,11 @@ public class CPUUsageCalculator {
     }
 
     private long calculateProcessCPUUsageDelta(CPUStatsModel currentCPUStats, CPUStatsModel previousCPUStats) {
-        return currentCPUStats.getCpuUsageModel().getTotalCPUUsage() - previousCPUStats.getCpuUsageModel().getTotalCPUUsage();
+        return currentCPUStats.cpuUsageModel().totalCPUUsage() - previousCPUStats.cpuUsageModel().totalCPUUsage();
     }
 
     private long calculateSystemCPUUsageDelta(CPUStatsModel currentCPUStats, CPUStatsModel previousCPUStats) {
-        return currentCPUStats.getSystemCPUUsage() - previousCPUStats.getSystemCPUUsage();
+        return currentCPUStats.systemCPUUsage() - previousCPUStats.systemCPUUsage();
     }
 
     private boolean isCPUActivityMeasured(double processCPUUsageDelta, double systemCPUUsageDelta) {
@@ -56,7 +56,7 @@ public class CPUUsageCalculator {
 
     private double calculateCPULoad(CPUStatsModel currentCPUStats, double processCPUUsageDelta, double systemCPUUsageDelta) {
 
-        int numberOfCPUs = currentCPUStats.getOnlineCPUs();
+        int numberOfCPUs = currentCPUStats.onlineCPUs();
         double rawCPULoad = (processCPUUsageDelta / systemCPUUsageDelta) * numberOfCPUs * PERCENTAGE_MULTIPLIER;
 
         return Precision.round(rawCPULoad, PRECISION_SCALE);

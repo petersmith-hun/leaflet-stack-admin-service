@@ -51,12 +51,12 @@ class DockerRegistryClientImplTest {
     private static final String REGISTRY_ID_2 = "registry-2";
     private static final String REPOSITORY_ID = "repository-1";
     private static final String TAG = "latest";
-    private static final DockerRepositories DOCKER_REPOSITORIES = DockerRepositories.getBuilder()
-            .withRepositories(Arrays.asList("lcfa", "leaflet", "lms"))
+    private static final DockerRepositories DOCKER_REPOSITORIES = DockerRepositories.builder()
+            .repositories(Arrays.asList("lcfa", "leaflet", "lms"))
             .build();
-    private static final DockerTags DOCKER_TAGS = DockerTags.getBuilder()
-            .withName(REPOSITORY_ID)
-            .withTags(Arrays.asList("1.0", "2.0", "latest"))
+    private static final DockerTags DOCKER_TAGS = DockerTags.builder()
+            .name(REPOSITORY_ID)
+            .tags(Arrays.asList("1.0", "2.0", "latest"))
             .build();
     private static final DockerTagManifest.DockerTagHistory DOCKER_TAG_HISTORY = new DockerTagManifest.DockerTagHistory("tag-history");
     private static final DockerTagManifest DOCKER_TAG_MANIFEST = new DockerTagManifest(TAG, Collections.singletonList(DOCKER_TAG_HISTORY));

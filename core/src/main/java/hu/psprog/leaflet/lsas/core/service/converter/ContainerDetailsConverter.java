@@ -18,10 +18,10 @@ public class ContainerDetailsConverter implements Converter<ContainerDetailsMode
     public ContainerDetails convert(ContainerDetailsModel containerDetailsModel) {
 
         return ContainerDetails.builder()
-                .id(containerDetailsModel.getId())
-                .status(DockerContainerStatus.parseStatus(containerDetailsModel.getStatus()))
-                .logPath(containerDetailsModel.getLogPath())
-                .startedAt(containerDetailsModel.getStartedAt())
+                .id(containerDetailsModel.id())
+                .status(DockerContainerStatus.parseStatus(containerDetailsModel.status()))
+                .logPath(containerDetailsModel.logPath())
+                .startedAt(containerDetailsModel.startedAt())
                 .build();
     }
 }

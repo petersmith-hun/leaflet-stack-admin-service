@@ -10,10 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Base64Utils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.Base64;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -110,7 +110,7 @@ public class DockerRegistryClientImpl implements DockerRegistryClient {
     private WebClient buildWebClient(ServiceRegistrations.DockerRegistry dockerRegistry, Jackson2JsonDecoder dockerManifestDecoder) {
 
         String basicAuth = String.format("%s:%s", dockerRegistry.getUsername(), dockerRegistry.getPassword());
-        String authHeader = String.format("Basic %s", Base64Utils.encodeToString(basicAuth.getBytes()));
+        String authHeader = String.format("Basic %s", Base64.getEncoder().encodeToString(basicAuth.getBytes()));
 
         return WebClient.builder()
                 .baseUrl(dockerRegistry.getHost())

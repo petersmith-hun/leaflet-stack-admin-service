@@ -83,8 +83,8 @@ class DockerRegistryServiceImplTest {
         // given
         String registryID = "leaflet";
         List<String> repositories = Arrays.asList("leaflet", "cbfs", "lms");
-        DockerRepositories dockerRepositories = DockerRepositories.getBuilder()
-                .withRepositories(repositories)
+        DockerRepositories dockerRepositories = DockerRepositories.builder()
+                .repositories(repositories)
                 .build();
         DockerRegistryContent expectedResult = new DockerRegistryContent(registryID, repositories);
 
@@ -109,9 +109,9 @@ class DockerRegistryServiceImplTest {
                 "2.0", prepareManifest("2.0", -5),
                 "3.0", prepareManifest("3.0", 0)
         );
-        DockerTags dockerTags = DockerTags.getBuilder()
-                .withName(repositoryID)
-                .withTags(List.copyOf(tags.keySet()))
+        DockerTags dockerTags = DockerTags.builder()
+                .name(repositoryID)
+                .tags(List.copyOf(tags.keySet()))
                 .build();
 
         given(dockerRegistryClient.getRepositoryTags(registryID,  repositoryID)).willReturn(Mono.just(dockerTags));
@@ -123,10 +123,10 @@ class DockerRegistryServiceImplTest {
         DockerRepository result = dockerRegistryService.getRepositoryDetails(registryID, repositoryID).block();
 
         // then
-        assertThat(result.getRegistry(), equalTo(registryID));
-        assertThat(result.getName(), equalTo(repositoryID));
-        assertThat(result.getTags(), hasSize(4));
-        assertThat(result.getTags().stream().map(DockerTag::getName).collect(Collectors.toList()),
+        assertThat(result.registry(), equalTo(registryID));
+        assertThat(result.name(), equalTo(repositoryID));
+        assertThat(result.tags(), hasSize(4));
+        assertThat(result.tags().stream().map(DockerTag::name).collect(Collectors.toList()),
                 equalTo(Arrays.asList("latest", "3.0", "2.0", "1.0")));
     }
 

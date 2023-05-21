@@ -33,7 +33,7 @@ public class MemoryUsageCalculator {
      */
     public Integer extractMemoryUsageInMegabytes(ContainerRuntimeStatsModel containerRuntimeStatsModel) {
 
-        return Optional.ofNullable(containerRuntimeStatsModel.getMemoryStats())
+        return Optional.ofNullable(containerRuntimeStatsModel.memoryStats())
                 .map(memory -> calculateMemoryUsage(memory) / MEGABYTES_DIVIDER)
                 .map(Long::intValue)
                 .orElse(INTEGER_ZERO);
@@ -52,14 +52,14 @@ public class MemoryUsageCalculator {
      */
     public double calculateMemoryUsagePercent(ContainerRuntimeStatsModel containerRuntimeStatsModel) {
 
-        return Optional.ofNullable(containerRuntimeStatsModel.getMemoryStats())
-                .filter(memory -> memory.getLimit() > 0)
-                .map(memory -> calculateMemoryUsage(memory) / ((double) memory.getLimit()) * PERCENTAGE_MULTIPLIER)
+        return Optional.ofNullable(containerRuntimeStatsModel.memoryStats())
+                .filter(memory -> memory.limit() > 0)
+                .map(memory -> calculateMemoryUsage(memory) / ((double) memory.limit()) * PERCENTAGE_MULTIPLIER)
                 .map(memoryUsagePercentage -> Precision.round(memoryUsagePercentage, PRECISION_SCALE))
                 .orElse(DOUBLE_ZERO);
     }
 
     private long calculateMemoryUsage(MemoryStatsModel memory) {
-        return memory.getUsage() - memory.getCache();
+        return memory.usage() - memory.cache();
     }
 }

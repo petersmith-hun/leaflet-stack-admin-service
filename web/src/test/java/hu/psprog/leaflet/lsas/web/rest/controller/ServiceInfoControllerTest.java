@@ -49,7 +49,7 @@ class ServiceInfoControllerTest {
         // then
         assertThat(result, notNullValue());
         assertThat(result.getStatusCode(), equalTo(HttpStatus.OK));
-        assertThat(result.getBody().getRegisteredServices(), equalTo(SERVICE_LIST));
+        assertThat(result.getBody().registeredServices(), equalTo(SERVICE_LIST));
     }
 
     @Test

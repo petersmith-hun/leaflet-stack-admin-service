@@ -3,10 +3,6 @@ package hu.psprog.leaflet.lsas.core.dockerapi;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
@@ -17,16 +13,12 @@ import java.util.Optional;
  *
  * @author Peter Smith
  */
-@Getter
-@EqualsAndHashCode
-@ToString
-@AllArgsConstructor
 @JsonDeserialize(builder = MemoryStatsModel.MemoryStatsModelBuilder.class)
-public class MemoryStatsModel {
-
-    private final Long usage;
-    private final Long limit;
-    private final Long cache;
+public record MemoryStatsModel(
+        Long usage,
+        Long limit,
+        Long cache
+) {
 
     public static MemoryStatsModelBuilder builder() {
         return new MemoryStatsModelBuilder();

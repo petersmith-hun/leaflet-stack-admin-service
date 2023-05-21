@@ -1,6 +1,7 @@
 package hu.psprog.leaflet.lsas.web.config;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -11,6 +12,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
  *
  * @author Peter Smith
  */
+@Configuration
 @EnableWebFluxSecurity
 public class SecurityConfiguration {
 
@@ -27,26 +29,24 @@ public class SecurityConfiguration {
     public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
 
         return http
-                .authorizeExchange()
-                    .pathMatchers(HttpMethod.OPTIONS, ENDPOINT_STACK_STATUS, ENDPOINT_CONTAINERS)
-                        .permitAll()
-                    .pathMatchers(HttpMethod.GET, ENDPOINT_STACK_STATUS)
-                        .hasAuthority(SCOPE_READ_SERVICES_STATUS)
-                    .pathMatchers(HttpMethod.GET, ENDPOINT_CONTAINERS)
-                        .hasAuthority(SCOPE_READ_DOCKER_CONTAINERS)
-                    .pathMatchers(HttpMethod.GET, ENDPOINT_REGISTRY)
-                        .hasAuthority(SCOPE_READ_DOCKER_REGISTRY)
-                    .pathMatchers(HttpMethod.DELETE, ENDPOINT_REGISTRY)
-                        .hasAuthority(SCOPE_WRITE_DOCKER_REGISTRY)
-                    .and()
+                .authorizeExchange(registry -> registry
+                        .pathMatchers(HttpMethod.OPTIONS, ENDPOINT_STACK_STATUS, ENDPOINT_CONTAINERS)
+                            .permitAll()
+                        .pathMatchers(HttpMethod.GET, ENDPOINT_STACK_STATUS)
+                            .hasAuthority(SCOPE_READ_SERVICES_STATUS)
+                        .pathMatchers(HttpMethod.GET, ENDPOINT_CONTAINERS)
+                            .hasAuthority(SCOPE_READ_DOCKER_CONTAINERS)
+                        .pathMatchers(HttpMethod.GET, ENDPOINT_REGISTRY)
+                            .hasAuthority(SCOPE_READ_DOCKER_REGISTRY)
+                        .pathMatchers(HttpMethod.DELETE, ENDPOINT_REGISTRY)
+                            .hasAuthority(SCOPE_WRITE_DOCKER_REGISTRY))
 
-                .csrf()
-                    .disable()
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
 
-                .cors()
-                    .and()
+                .cors(cors -> {})
 
-                .oauth2ResourceServer(ServerHttpSecurity.OAuth2ResourceServerSpec::jwt)
+                .oauth2ResourceServer(resourceServer -> resourceServer
+                        .jwt(jwtSpec -> {}))
 
                 .build();
     }

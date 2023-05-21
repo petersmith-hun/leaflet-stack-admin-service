@@ -1,13 +1,8 @@
 package hu.psprog.leaflet.lsas.core.dockerapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-import org.apache.commons.lang3.StringUtils;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Optional;
 
@@ -16,50 +11,28 @@ import java.util.Optional;
  *
  * @author Peter Smith
  */
-@Getter
-@EqualsAndHashCode
-@ToString
 @Builder
-@JsonDeserialize(builder = CPUStatsModel.CPUStatsModelBuilder.class)
-public class CPUStatsModel {
+@Jacksonized
+public record CPUStatsModel(
+        @JsonProperty("cpu_usage") CPUStatsModel.CPUUsageModel cpuUsageModel,
+        @JsonProperty("online_cpus") Integer onlineCPUs,
+        @JsonProperty("system_cpu_usage") Long systemCPUUsage
+) {
 
-    @JsonProperty("cpu_usage")
-    private final CPUUsageModel cpuUsageModel;
-
-    @JsonProperty("online_cpus")
-    private final Integer onlineCPUs;
-
-    @JsonProperty("system_cpu_usage")
-    private final Long systemCPUUsage;
-
-    public Long getSystemCPUUsage() {
+    @Override
+    public Long systemCPUUsage() {
         return Optional.ofNullable(systemCPUUsage)
                 .orElse(0L);
     }
 
-    @JsonPOJOBuilder(withPrefix = StringUtils.EMPTY)
-    public static class CPUStatsModelBuilder {
-
-    }
-
-    @Getter
-    @EqualsAndHashCode
-    @ToString
     @Builder
-    @JsonDeserialize(builder = CPUUsageModel.CPUUsageModelBuilder.class)
-    public static class CPUUsageModel {
+    @Jacksonized
+    public record CPUUsageModel(@JsonProperty("total_usage") Long totalCPUUsage) {
 
-        @JsonProperty("total_usage")
-        private final Long totalCPUUsage;
-
-        public Long getTotalCPUUsage() {
+        @Override
+        public Long totalCPUUsage() {
             return Optional.ofNullable(totalCPUUsage)
                     .orElse(0L);
-        }
-
-        @JsonPOJOBuilder(withPrefix = StringUtils.EMPTY)
-        public static class CPUUsageModelBuilder {
-
         }
     }
 }

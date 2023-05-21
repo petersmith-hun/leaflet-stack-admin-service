@@ -2,7 +2,6 @@ package hu.psprog.leaflet.lsas.core.domain;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Enum representation for the possible Docker container statuses.
@@ -21,7 +20,7 @@ public enum DockerContainerStatus {
 
     private static final List<String> STATUS_NAMES = Arrays.stream(values())
             .map(Enum::name)
-            .collect(Collectors.toList());
+            .toList();
 
     /**
      * Maps a given string status representation to the corresponding enum constant.
