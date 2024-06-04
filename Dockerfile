@@ -7,7 +7,7 @@ ENV ENV_APP_EXECUTABLE=$APP_EXECUTABLE
 ENV ENV_APP_USER=$APP_USER
 
 RUN addgroup --system --gid 1000 $APP_USER
-RUN adduser --system --no-create-home --gid 1000 --uid 1000 $APP_USER
+RUN adduser --system --no-create-home --ingroup $APP_USER --uid 1000 $APP_USER
 RUN mkdir -p $APP_HOME
 ADD web/target/$APP_EXECUTABLE $APP_HOME
 ADD config/leaflet-sas-exec.conf $APP_HOME
