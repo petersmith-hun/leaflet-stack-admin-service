@@ -91,7 +91,7 @@ jobs:
             if [[ $CIRCLE_BRANCH == "master" ]] then
               skip_latest_tag="false"
             fi
-            mvn deploy -s .circleci/settings.xml -Ddocker.skip-latest=$skip_latest_tag
+            mvn -pl web dockerfile:push -s .circleci/settings.xml -Ddocker.skip-latest=$skip_latest_tag
           name: Push Docker image
       - run:
           command: |
