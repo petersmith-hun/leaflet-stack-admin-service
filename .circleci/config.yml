@@ -87,11 +87,10 @@ jobs:
           name: Build
       - run:
           command: |
-            skip_latest_tag="true"
-            if [[ $CIRCLE_BRANCH == "master" ]]; then
-              skip_latest_tag="false"
+            mvn -pl web dockerfile:push@tag-with-project-version -s .circleci/settings.xml -Ddocker.skip-latest=true
+            if [[ $CIRCLE_BRANCH == "deploy" ]]; then
+              mvn -pl web dockerfile:push@tag-with-latest -s .circleci/settings.xml -Ddocker.skip-latest=false
             fi
-            mvn -pl web dockerfile:push -s .circleci/settings.xml -Ddocker.skip-latest=$skip_latest_tag
           name: Push Docker image
       - run:
           command: |
