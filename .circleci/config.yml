@@ -164,6 +164,7 @@ workflows:
           context:
             - common-tech
             - docker-registry
+            - github-packages
           filters:
             branches:
               only:
@@ -186,6 +187,7 @@ workflows:
           context:
             - common-tech
             - docker-registry
+            - github-packages
           filters:
             branches:
               only:
