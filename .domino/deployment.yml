@@ -1,0 +1,32 @@
+domino:
+  deployments:
+    lsas:
+      source:
+        type: DOCKER
+        home: "[dsm:common.home.docker]"
+        resource: lsas
+      target:
+        hosts:
+          - psproghu
+      execution:
+        command-name: app_lsas
+        via: STANDARD
+        args:
+          ports:
+            8089: 8089
+          network-mode: host
+          environment:
+            APP_ARGS: |
+              --spring.profiles.active=production
+              --spring.config.location=/opt/lsas/appconfig_lsas.yml
+          volumes:
+            "[dsm:volume.logs]": "/opt/lsas/logs:rw"
+            "[dsm:volume.config.lsas]": "/opt/lsas/appconfig_lsas.yml:ro"
+            "/var/run/docker.sock": "/var/run/docker.sock:ro"
+            "/etc/timezone": "/etc/timezone:ro"
+            "/etc/localtime": "/etc/localtime:ro"
+          restart-policy: unless-stopped
+      health-check:
+        enabled: false
+      info:
+        enabled: false
