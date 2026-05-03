@@ -1,16 +1,20 @@
 package hu.psprog.leaflet.lsas.core.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
+import hu.psprog.leaflet.bridge.client.handler.ResponseReader;
+import hu.psprog.leaflet.bridge.client.impl.ResponseReaderImpl;
+import hu.psprog.leaflet.bridge.client.request.RequestAdapter;
 import hu.psprog.leaflet.lsas.core.client.factory.DockerEngineWebClientFactory;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.util.TimeValue;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.JacksonJsonDecoder;
 import org.springframework.util.MimeType;
 import org.springframework.web.reactive.function.client.WebClient;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.concurrent.TimeUnit;
 
@@ -22,13 +26,28 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class ServiceConfiguration {
 
-    @Bean
-    public Client jerseyClient(ObjectMapper objectMapper, @Value("${lsas.call-timeout}") int readTimeout) {
+    private static final TimeValue MAX_IDLE_TIME = TimeValue.ofSeconds(30L);
+    private static final RequestAdapter DUMMY_REQUEST_ADAPTER = new DummyRequestAdapter();
 
-        return ClientBuilder.newBuilder()
-                .register(new JacksonJsonProvider(objectMapper))
-                .readTimeout(readTimeout, TimeUnit.MILLISECONDS)
+    @Bean
+    public HttpClient bridgeHttpClient(@Value("${lsas.call-timeout}") int readTimeout) {
+
+        return HttpClientBuilder.create()
+                .disableAuthCaching()
+                .disableAutomaticRetries()
+                .disableConnectionState()
+                .disableCookieManagement()
+                .disableRedirectHandling()
+                .setDefaultRequestConfig(RequestConfig.copy(RequestConfig.DEFAULT)
+                        .setResponseTimeout(readTimeout, TimeUnit.MILLISECONDS)
+                        .build())
+                .evictIdleConnections(MAX_IDLE_TIME)
                 .build();
+    }
+
+    @Bean
+    public ResponseReader responseReader(JsonMapper jsonMapper) {
+        return new ResponseReaderImpl(DUMMY_REQUEST_ADAPTER, jsonMapper);
     }
 
     @Bean
@@ -37,7 +56,24 @@ public class ServiceConfiguration {
     }
 
     @Bean
-    public Jackson2JsonDecoder dockerManifestDecoder(ObjectMapper objectMapper) {
-        return new Jackson2JsonDecoder(objectMapper, new MimeType("application", "vnd.docker.distribution.manifest.v1+prettyjws"));
+    public JacksonJsonDecoder dockerManifestDecoder(JsonMapper jsonMapper) {
+        return new JacksonJsonDecoder(jsonMapper, new MimeType("application", "vnd.docker.distribution.manifest.v1+prettyjws"));
+    }
+
+    static class DummyRequestAdapter implements RequestAdapter {
+
+        @Override
+        public String provideDeviceID() {
+            return "";
+        }
+
+        @Override
+        public String provideClientID() {
+            return "";
+        }
+
+        @Override
+        public void consumeAuthenticationToken(String token) {
+        }
     }
 }

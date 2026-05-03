@@ -1,6 +1,8 @@
 package hu.psprog.leaflet.lsas.core.service.factory.impl;
 
+import hu.psprog.leaflet.bridge.client.handler.ResponseReader;
 import hu.psprog.leaflet.lsas.core.status.impl.ActuatorBasedServiceStatusAdapter;
+import org.apache.hc.client5.http.classic.HttpClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,7 +11,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.ReflectionUtils;
 
-import jakarta.ws.rs.client.Client;
 import java.lang.reflect.Field;
 import java.util.Comparator;
 import java.util.List;
@@ -39,23 +40,29 @@ class ActuatorBasedServiceStatusAdapterFactoryImplTest {
             SVC_3, URL_3);
 
     @Mock
-    private Client client;
+    private HttpClient httpClient;
+
+    @Mock
+    private ResponseReader responseReader;
 
     @InjectMocks
     private ActuatorBasedServiceStatusAdapterFactoryImpl actuatorBasedServiceStatusAdapterFactory;
 
     private Field clientField;
+    private Field responseReaderField;
     private Field abbreviationField;
     private Field statusUrlField;
 
     @BeforeEach
     void setup() {
 
-        clientField = ReflectionUtils.findField(ActuatorBasedServiceStatusAdapter.class, "client");
+        clientField = ReflectionUtils.findField(ActuatorBasedServiceStatusAdapter.class, "httpClient");
+        responseReaderField = ReflectionUtils.findField(ActuatorBasedServiceStatusAdapter.class, "responseReader");
         abbreviationField = ReflectionUtils.findField(ActuatorBasedServiceStatusAdapter.class, "serviceAbbreviation");
         statusUrlField = ReflectionUtils.findField(ActuatorBasedServiceStatusAdapter.class, "statusURL");
 
         clientField.setAccessible(true);
+        responseReaderField.setAccessible(true);
         abbreviationField.setAccessible(true);
         statusUrlField.setAccessible(true);
     }
@@ -75,7 +82,8 @@ class ActuatorBasedServiceStatusAdapterFactoryImplTest {
     }
 
     private void assertAdapter(ActuatorBasedServiceStatusAdapter adapter, String abbreviation, String url) throws IllegalAccessException {
-        assertThat(clientField.get(adapter), equalTo(client));
+        assertThat(clientField.get(adapter), equalTo(httpClient));
+        assertThat(responseReaderField.get(adapter), equalTo(responseReader));
         assertThat(abbreviationField.get(adapter), equalTo(abbreviation));
         assertThat(statusUrlField.get(adapter), equalTo(url));
     }

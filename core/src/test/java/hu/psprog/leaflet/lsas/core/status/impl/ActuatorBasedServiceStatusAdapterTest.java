@@ -1,24 +1,32 @@
 package hu.psprog.leaflet.lsas.core.status.impl;
 
+import hu.psprog.leaflet.bridge.client.handler.ResponseReader;
 import hu.psprog.leaflet.lsas.core.domain.BuildInfo;
 import hu.psprog.leaflet.lsas.core.domain.ServiceInfo;
 import hu.psprog.leaflet.lsas.core.domain.ServiceStatus;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.core.type.TypeReference;
 
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.Invocation;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doAnswer;
 
 /**
  * Unit tests for {@link ActuatorBasedServiceStatusAdapter}.
@@ -36,48 +44,57 @@ class ActuatorBasedServiceStatusAdapterTest {
     private static final ServiceStatus SERVICE_STATUS = new ServiceStatus(SERVICE_INFO, BUILD_INFO);
 
     @Mock
-    private Client client;
+    private HttpClient httpClient;
 
     @Mock
-    private WebTarget webTarget;
+    private ClassicHttpResponse response;
 
     @Mock
-    private Invocation.Builder builder;
+    private ResponseReader responseReader;
 
-    @Mock
-    private Response response;
+    @Captor
+    private ArgumentCaptor<HttpClientResponseHandler<ServiceStatus>> responseHandlerCaptor;
+
+    @Captor
+    private ArgumentCaptor<TypeReference<ServiceStatus>> typeReferenceCaptor;
+
+    @Captor
+    private ArgumentCaptor<HttpGet> requestCaptor;
 
     private ActuatorBasedServiceStatusAdapter actuatorBasedServiceStatusAdapter;
 
     @BeforeEach
     void setup() {
-        actuatorBasedServiceStatusAdapter = new ActuatorBasedServiceStatusAdapter(client, SERVICE_ABBREVIATION, STATUS_URL);
+        actuatorBasedServiceStatusAdapter = new ActuatorBasedServiceStatusAdapter(httpClient, responseReader, SERVICE_ABBREVIATION, STATUS_URL);
     }
 
     @Test
-    void shouldGetStatusWithSuccess() {
+    void shouldGetStatusWithSuccess() throws IOException, HttpException, URISyntaxException {
 
         // given
-        given(client.target(STATUS_URL)).willReturn(webTarget);
-        given(webTarget.request()).willReturn(builder);
-        given(builder.get()).willReturn(response);
-        given(response.getStatusInfo()).willReturn(Response.Status.OK);
-        given(response.readEntity(ServiceStatus.class)).willReturn(SERVICE_STATUS);
+        given(httpClient.execute(requestCaptor.capture(), responseHandlerCaptor.capture())).willReturn(SERVICE_STATUS);
+        given(responseReader.read(eq(response), typeReferenceCaptor.capture())).willReturn(SERVICE_STATUS);
 
         // when
         ServiceStatus result = actuatorBasedServiceStatusAdapter.getStatus();
 
         // then
+        responseHandlerCaptor.getValue().handleResponse(response);
+
         assertThat(result, equalTo(SERVICE_STATUS));
+        assertThat(typeReferenceCaptor.getValue().getType(), equalTo(ServiceStatus.class));
+
+        HttpGet request = requestCaptor.getValue();
+        assertThat(request.getMethod(), equalTo("GET"));
+        assertThat(request.getPath(), equalTo("/api"));
+        assertThat(request.getUri().toString(), equalTo(STATUS_URL));
     }
 
     @Test
-    void shouldGetStatusReturnWithDownServiceForException() {
+    void shouldGetStatusReturnWithDownServiceForException() throws IOException {
 
         // given
-        given(client.target(STATUS_URL)).willReturn(webTarget);
-        given(webTarget.request()).willReturn(builder);
-        doThrow(RuntimeException.class).when(builder).get();
+        given(httpClient.execute(requestCaptor.capture(), responseHandlerCaptor.capture())).willThrow(IOException.class);
 
         // when
         ServiceStatus result = actuatorBasedServiceStatusAdapter.getStatus();
@@ -87,13 +104,15 @@ class ActuatorBasedServiceStatusAdapterTest {
     }
 
     @Test
-    void shouldGetStatusReturnWithDownServiceForNonSuccessfulResponse() {
+    void shouldGetStatusReturnWithDownServiceForNonSuccessfulResponse() throws IOException {
 
         // given
-        given(client.target(STATUS_URL)).willReturn(webTarget);
-        given(webTarget.request()).willReturn(builder);
-        given(builder.get()).willReturn(response);
-        given(response.getStatusInfo()).willReturn(Response.Status.INTERNAL_SERVER_ERROR);
+        given(responseReader.read(eq(response), typeReferenceCaptor.capture())).willThrow(RuntimeException.class);
+        doAnswer(invocation -> {
+            var handler = invocation.getArgument(1, HttpClientResponseHandler.class);
+            handler.handleResponse(response);
+            return null;
+        }).when(httpClient).execute(requestCaptor.capture(), responseHandlerCaptor.capture());
 
         // when
         ServiceStatus result = actuatorBasedServiceStatusAdapter.getStatus();

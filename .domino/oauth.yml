@@ -1,0 +1,26 @@
+domino:
+  oauth:
+    lsas:
+      behavior:
+        target-provider: gateway-psproghu
+        roll-client-secret-on-deploy: true
+        use-secret-manager-for:
+          - client-secret
+          - client-id
+      tenant:
+        environment: prod
+        name: psproghu
+      resource-server:
+        use-audience: true
+        registered-permissions:
+          - read:docker:containers
+          - read:docker:registry
+          - read:services:status
+          - write:docker:registry
+        allowed-clients:
+          - name: lpmc
+            allowed-permissions:
+              - read:docker:containers
+              - read:docker:registry
+              - read:services:status
+              - write:docker:registry

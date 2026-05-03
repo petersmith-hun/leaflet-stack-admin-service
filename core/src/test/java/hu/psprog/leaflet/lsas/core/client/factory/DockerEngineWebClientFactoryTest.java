@@ -1,6 +1,5 @@
 package hu.psprog.leaflet.lsas.core.client.factory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import hu.psprog.leaflet.lsas.core.config.ServiceRegistrations;
 import io.netty.channel.unix.DomainSocketAddress;
 import org.junit.jupiter.api.Test;
@@ -13,11 +12,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.ClientCodecConfigurer;
-import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.JacksonJsonDecoder;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.http.client.HttpClientConfig;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.reflect.Field;
 import java.util.function.Consumer;
@@ -46,7 +46,7 @@ class DockerEngineWebClientFactoryTest {
     private ServiceRegistrations serviceRegistrations;
 
     @Mock
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     @Mock
     private WebClient.Builder webClientBuilder;
@@ -130,7 +130,7 @@ class DockerEngineWebClientFactoryTest {
 
         Consumer<ClientCodecConfigurer> configurerValue = codecCaptor.getValue();
         configurerValue.accept(clientCodecConfigurer);
-        verify(clientDefaultCodecs).jackson2JsonDecoder(any(Jackson2JsonDecoder.class));
+        verify(clientDefaultCodecs).jacksonJsonDecoder(any(JacksonJsonDecoder.class));
     }
 
     private HttpClient extractClient(ClientHttpConnector clientHttpConnector) throws IllegalAccessException {
@@ -159,6 +159,6 @@ class DockerEngineWebClientFactoryTest {
 
         given(serviceRegistrations.getDockerIntegration()).willReturn(dockerIntegration);
 
-        dockerEngineWebClientFactory = new DockerEngineWebClientFactory(serviceRegistrations, objectMapper);
+        dockerEngineWebClientFactory = new DockerEngineWebClientFactory(serviceRegistrations, jsonMapper);
     }
 }
