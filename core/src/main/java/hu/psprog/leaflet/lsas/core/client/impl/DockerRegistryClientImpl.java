@@ -8,7 +8,7 @@ import hu.psprog.leaflet.lsas.core.dockerapi.DockerTags;
 import hu.psprog.leaflet.lsas.core.domain.DockerRegistryPath;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.JacksonJsonDecoder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -30,7 +30,7 @@ public class DockerRegistryClientImpl implements DockerRegistryClient {
     private final Map<String, WebClient> clientMap;
 
     @Autowired
-    public DockerRegistryClientImpl(ServiceRegistrations serviceRegistrations, Jackson2JsonDecoder dockerManifestDecoder) {
+    public DockerRegistryClientImpl(ServiceRegistrations serviceRegistrations, JacksonJsonDecoder dockerManifestDecoder) {
         this.clientMap = prepareClientMap(serviceRegistrations, dockerManifestDecoder);
     }
 
@@ -99,7 +99,7 @@ public class DockerRegistryClientImpl implements DockerRegistryClient {
         return selectedWebClient;
     }
 
-    private Map<String, WebClient> prepareClientMap(ServiceRegistrations serviceRegistrations, Jackson2JsonDecoder dockerManifestDecoder) {
+    private Map<String, WebClient> prepareClientMap(ServiceRegistrations serviceRegistrations, JacksonJsonDecoder dockerManifestDecoder) {
 
         return serviceRegistrations.getDockerIntegration()
                 .getRegistryCatalog()
@@ -107,7 +107,7 @@ public class DockerRegistryClientImpl implements DockerRegistryClient {
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> buildWebClient(entry.getValue(), dockerManifestDecoder)));
     }
 
-    private WebClient buildWebClient(ServiceRegistrations.DockerRegistry dockerRegistry, Jackson2JsonDecoder dockerManifestDecoder) {
+    private WebClient buildWebClient(ServiceRegistrations.DockerRegistry dockerRegistry, JacksonJsonDecoder dockerManifestDecoder) {
 
         String basicAuth = String.format("%s:%s", dockerRegistry.getUsername(), dockerRegistry.getPassword());
         String authHeader = String.format("Basic %s", Base64.getEncoder().encodeToString(basicAuth.getBytes()));

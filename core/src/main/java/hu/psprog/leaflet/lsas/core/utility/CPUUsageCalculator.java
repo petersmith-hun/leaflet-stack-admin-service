@@ -2,8 +2,10 @@ package hu.psprog.leaflet.lsas.core.utility;
 
 import hu.psprog.leaflet.lsas.core.dockerapi.CPUStatsModel;
 import hu.psprog.leaflet.lsas.core.dockerapi.ContainerRuntimeStatsModel;
-import org.apache.commons.math3.util.Precision;
 import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * Utility class to calculate CPU usage of Docker containers.
@@ -19,7 +21,7 @@ public class CPUUsageCalculator {
 
     /**
      * Calculates CPU usage as percentage.
-     *
+     * <p>
      * Calculation is based on the algorithm described in Docker Engine's documentation:
      *  1) Delta of the current and previous total CPU usage of the container process is calculated.
      *  2) Delta of the current and previous total CPU usage of the system is calculated.
@@ -59,6 +61,8 @@ public class CPUUsageCalculator {
         int numberOfCPUs = currentCPUStats.onlineCPUs();
         double rawCPULoad = (processCPUUsageDelta / systemCPUUsageDelta) * numberOfCPUs * PERCENTAGE_MULTIPLIER;
 
-        return Precision.round(rawCPULoad, PRECISION_SCALE);
+        return (new BigDecimal(Double.toString(rawCPULoad))
+                .setScale(PRECISION_SCALE, RoundingMode.HALF_UP))
+                .doubleValue();
     }
 }

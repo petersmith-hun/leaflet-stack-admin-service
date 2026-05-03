@@ -1,6 +1,5 @@
 package hu.psprog.leaflet.lsas.core.client.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -15,9 +14,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.JacksonJsonDecoder;
 import org.springframework.util.MimeType;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,8 +44,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class DockerRegistryClientImplTest {
 
     private static final ServiceRegistrations SERVICE_REGISTRATIONS = prepareConfig();
-    private static final Jackson2JsonDecoder DOCKER_MANIFEST_DECODER =
-            new Jackson2JsonDecoder(new ObjectMapper(), new MimeType("application", "vnd.docker.distribution.manifest.v1+prettyjws"));
+    private static final JacksonJsonDecoder DOCKER_MANIFEST_DECODER =
+            new JacksonJsonDecoder(new JsonMapper(), new MimeType("application", "vnd.docker.distribution.manifest.v1+prettyjws"));
 
     private static final String REGISTRY_ID_1 = "registry-1";
     private static final String REGISTRY_ID_2 = "registry-2";
@@ -64,7 +64,7 @@ class DockerRegistryClientImplTest {
 
     private static WireMockServer wireMockServerRegistry1;
     private static WireMockServer wireMockServerRegistry2;
-    private static DockerRegistryClient dockerRegistryClient =
+    private static final DockerRegistryClient dockerRegistryClient =
             new DockerRegistryClientImpl(SERVICE_REGISTRATIONS, DOCKER_MANIFEST_DECODER);
 
     @BeforeAll

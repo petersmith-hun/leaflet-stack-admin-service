@@ -2,9 +2,10 @@ package hu.psprog.leaflet.lsas.core.utility;
 
 import hu.psprog.leaflet.lsas.core.dockerapi.ContainerRuntimeStatsModel;
 import hu.psprog.leaflet.lsas.core.dockerapi.MemoryStatsModel;
-import org.apache.commons.math3.util.Precision;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Optional;
 
 /**
@@ -23,7 +24,7 @@ public class MemoryUsageCalculator {
 
     /**
      * Calculates used memory in MB.
-     *
+     * <p>
      * Calculation is based on the algorithm described in Docker Engine's documentation:
      *  1) Amount of cached memory usage is subtracted from the currently used total memory of the container.
      *  2) Calculated value is divided by MEGABYTES_DIVIDER (byte -> MB) and returned.
@@ -41,7 +42,7 @@ public class MemoryUsageCalculator {
 
     /**
      * Calculates used memory as percentage of the total available system memory.
-     *
+     * <p>
      * Calculation is based on the algorithm described in Docker Engine's documentation:
      *  1) Amount of cached memory usage is subtracted from the currently used total memory of the container.
      *  2) Calculated value is divided by the total available memory ("limit").
@@ -55,7 +56,9 @@ public class MemoryUsageCalculator {
         return Optional.ofNullable(containerRuntimeStatsModel.memoryStats())
                 .filter(memory -> memory.limit() > 0)
                 .map(memory -> calculateMemoryUsage(memory) / ((double) memory.limit()) * PERCENTAGE_MULTIPLIER)
-                .map(memoryUsagePercentage -> Precision.round(memoryUsagePercentage, PRECISION_SCALE))
+                .map(memoryUsagePercentage -> (new BigDecimal(Double.toString(memoryUsagePercentage))
+                        .setScale(PRECISION_SCALE, RoundingMode.HALF_UP))
+                        .doubleValue())
                 .orElse(DOUBLE_ZERO);
     }
 

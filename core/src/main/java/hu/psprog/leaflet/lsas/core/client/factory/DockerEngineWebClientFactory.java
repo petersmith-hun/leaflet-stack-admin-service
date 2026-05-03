@@ -1,16 +1,16 @@
 package hu.psprog.leaflet.lsas.core.client.factory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import hu.psprog.leaflet.lsas.core.config.ServiceRegistrations;
 import io.netty.channel.unix.DomainSocketAddress;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.ClientCodecConfigurer;
-import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.JacksonJsonDecoder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Factory implementation for creating a {@link WebClient} instance used for Docker Engine API communication.
@@ -21,12 +21,12 @@ import reactor.netty.http.client.HttpClient;
 public class DockerEngineWebClientFactory {
 
     private final ServiceRegistrations.DockerIntegration dockerIntegration;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Autowired
-    public DockerEngineWebClientFactory(ServiceRegistrations serviceRegistrations, ObjectMapper objectMapper) {
+    public DockerEngineWebClientFactory(ServiceRegistrations serviceRegistrations, JsonMapper jsonMapper) {
         this.dockerIntegration = serviceRegistrations.getDockerIntegration();
-        this.objectMapper = objectMapper;
+        this.jsonMapper = jsonMapper;
     }
 
     /**
@@ -40,7 +40,7 @@ public class DockerEngineWebClientFactory {
     public WebClient createWebClient() {
 
         WebClient.Builder webClientBuilder = WebClient.builder()
-                .codecs(clientCodecConfigurer -> registerJacksonDecoderCodec(objectMapper, clientCodecConfigurer));
+                .codecs(this::registerJacksonDecoderCodec);
 
         if (isDockerSocketIntegrationSelected()) {
             webClientBuilder.clientConnector(createReactorClientHttpConnector());
@@ -51,8 +51,8 @@ public class DockerEngineWebClientFactory {
         return webClientBuilder.build();
     }
 
-    private void registerJacksonDecoderCodec(ObjectMapper objectMapper, ClientCodecConfigurer clientCodecConfigurer) {
-        clientCodecConfigurer.defaultCodecs().jackson2JsonDecoder(new Jackson2JsonDecoder(objectMapper, MediaType.ALL));
+    private void registerJacksonDecoderCodec(ClientCodecConfigurer clientCodecConfigurer) {
+        clientCodecConfigurer.defaultCodecs().jacksonJsonDecoder(new JacksonJsonDecoder(jsonMapper, MediaType.ALL));
     }
 
     private boolean isDockerSocketIntegrationSelected() {

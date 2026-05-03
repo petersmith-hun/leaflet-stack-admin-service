@@ -53,7 +53,7 @@ public class DockerContainerStatisticsClientImpl implements DockerContainerStati
                 .retrieve()
                 .bodyToMono(ContainerDetailsModel.class)
                 .onErrorResume(throwable -> {
-                    log.error(String.format("Failed to retrieve details for container=[%s]", containerID), throwable);
+                    log.error("Failed to retrieve details for container=[{}]", containerID, throwable);
                     return Mono.empty();
                 });
     }
@@ -67,7 +67,7 @@ public class DockerContainerStatisticsClientImpl implements DockerContainerStati
                 .retrieve()
                 .bodyToFlux(ContainerRuntimeStatsModel.class)
                 .onErrorResume(throwable -> {
-                    log.error(String.format("Failed to retrieve statistics for container=[%s]", containerID), throwable);
+                    log.error("Failed to retrieve statistics for container=[{}]", containerID, throwable);
                     return Flux.empty();
                 });
     }

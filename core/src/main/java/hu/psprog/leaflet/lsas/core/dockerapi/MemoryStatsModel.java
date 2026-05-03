@@ -1,9 +1,8 @@
 package hu.psprog.leaflet.lsas.core.dockerapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import org.apache.commons.lang3.StringUtils;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.util.Map;
 import java.util.Optional;
@@ -24,7 +23,7 @@ public record MemoryStatsModel(
         return new MemoryStatsModelBuilder();
     }
 
-    @JsonPOJOBuilder(withPrefix = StringUtils.EMPTY)
+    @JsonPOJOBuilder(withPrefix = "")
     public static final class MemoryStatsModelBuilder {
 
         private Long usage = 0L;
