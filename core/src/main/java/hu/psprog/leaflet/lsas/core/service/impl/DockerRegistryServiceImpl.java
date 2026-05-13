@@ -1,10 +1,9 @@
 package hu.psprog.leaflet.lsas.core.service.impl;
 
-import com.jayway.jsonpath.JsonPath;
 import hu.psprog.leaflet.lsas.core.client.DockerRegistryClient;
 import hu.psprog.leaflet.lsas.core.config.ServiceRegistrations;
+import hu.psprog.leaflet.lsas.core.dockerapi.DockerBlobManifest;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerRepositories;
-import hu.psprog.leaflet.lsas.core.dockerapi.DockerTagManifest;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerTags;
 import hu.psprog.leaflet.lsas.core.domain.DockerRegistryContent;
 import hu.psprog.leaflet.lsas.core.domain.DockerRepository;
@@ -19,7 +18,6 @@ import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -59,8 +57,9 @@ public class DockerRegistryServiceImpl implements DockerRegistryService {
                 .filter(dockerTags -> Objects.nonNull(dockerTags.tags()))
                 .map(DockerTags::tags)
                 .flatMapMany(Flux::fromIterable)
-                .flatMap(tag -> dockerRegistryClient.getTagManifest(registryID, repositoryID, tag))
-                .map(this::mapToDockerTag)
+                .flatMap(tag -> dockerRegistryClient.getTagManifest(registryID, repositoryID, tag)
+                        .flatMap(tagManifest -> dockerRegistryClient.getBlobManifest(registryID, repositoryID, tagManifest.config().digest()))
+                        .map(blobManifest -> mapToDockerTag(tag, blobManifest)))
                 .sort(Comparator
                         .comparing(DockerTag::created)
                         .thenComparing(DockerTag::name)
@@ -85,16 +84,7 @@ public class DockerRegistryServiceImpl implements DockerRegistryService {
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getHost()));
     }
 
-    private DockerTag mapToDockerTag(DockerTagManifest dockerTagManifest) {
-
-        ZonedDateTime created = dockerTagManifest.history().stream()
-                .map(DockerTagManifest.DockerTagHistory::v1Compatibility)
-                .map(metaString -> JsonPath.read(metaString, "$.created"))
-                .map(String::valueOf)
-                .map(ZonedDateTime::parse)
-                .max(Comparator.comparing(Function.identity()))
-                .orElse(null);
-
-        return new DockerTag(dockerTagManifest.tag(), created);
+    private DockerTag mapToDockerTag(String tag, DockerBlobManifest blobManifest) {
+        return new DockerTag(tag, ZonedDateTime.parse(blobManifest.created()));
     }
 }

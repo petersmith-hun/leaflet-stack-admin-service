@@ -57,7 +57,11 @@ public class ServiceConfiguration {
 
     @Bean
     public JacksonJsonDecoder dockerManifestDecoder(JsonMapper jsonMapper) {
-        return new JacksonJsonDecoder(jsonMapper, new MimeType("application", "vnd.docker.distribution.manifest.v1+prettyjws"));
+
+        return new JacksonJsonDecoder(jsonMapper,
+                MimeType.valueOf("application/vnd.docker.distribution.manifest.v1+prettyjws"),
+                // for reading blob manifests
+                MimeType.valueOf("application/octet-stream"));
     }
 
     static class DummyRequestAdapter implements RequestAdapter {

@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import hu.psprog.leaflet.lsas.core.client.DockerRegistryClient;
 import hu.psprog.leaflet.lsas.core.config.ServiceRegistrations;
+import hu.psprog.leaflet.lsas.core.dockerapi.DockerBlobManifest;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerRepositories;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerTagManifest;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerTags;
@@ -20,8 +21,6 @@ import reactor.core.publisher.Mono;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
@@ -44,8 +43,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class DockerRegistryClientImplTest {
 
     private static final ServiceRegistrations SERVICE_REGISTRATIONS = prepareConfig();
-    private static final JacksonJsonDecoder DOCKER_MANIFEST_DECODER =
-            new JacksonJsonDecoder(new JsonMapper(), new MimeType("application", "vnd.docker.distribution.manifest.v1+prettyjws"));
+    private static final JacksonJsonDecoder DOCKER_MANIFEST_DECODER = new JacksonJsonDecoder(new JsonMapper(),
+            MimeType.valueOf("application/vnd.docker.distribution.manifest.v1+prettyjws"),
+            MimeType.valueOf("application/octet-stream"));
 
     private static final String REGISTRY_ID_1 = "registry-1";
     private static final String REGISTRY_ID_2 = "registry-2";
@@ -58,9 +58,9 @@ class DockerRegistryClientImplTest {
             .name(REPOSITORY_ID)
             .tags(Arrays.asList("1.0", "2.0", "latest"))
             .build();
-    private static final DockerTagManifest.DockerTagHistory DOCKER_TAG_HISTORY = new DockerTagManifest.DockerTagHistory("tag-history");
-    private static final DockerTagManifest DOCKER_TAG_MANIFEST = new DockerTagManifest(TAG, Collections.singletonList(DOCKER_TAG_HISTORY));
     private static final String TAG_DIGEST = "tag-digest";
+    private static final DockerTagManifest DOCKER_TAG_MANIFEST = new DockerTagManifest(new DockerTagManifest.DockerTagManifestConfig(TAG_DIGEST));
+    private static final DockerBlobManifest DOCKER_BLOB_MANIFEST = new DockerBlobManifest("2026-05-13T20:25:31Z");
 
     private static WireMockServer wireMockServerRegistry1;
     private static WireMockServer wireMockServerRegistry2;
@@ -107,7 +107,7 @@ class DockerRegistryClientImplTest {
 
         // when
         assertThrows(IllegalArgumentException.class,
-                () -> dockerRegistryClient.getRepositories("non-existing-registry"));
+                () -> dockerRegistryClient.getRepositories("non-existing-registry").block());
 
         // then
         // exception expected
@@ -144,18 +144,20 @@ class DockerRegistryClientImplTest {
     }
 
     @Test
-    public void shouldGetTagManifestThrowExceptionWhenResponseBodyIsMalformed() {
+    public void shouldGetBlobManifest() {
 
         // given
-        wireMockServerRegistry2.givenThat(get(urlEqualTo("/v2/repository-1/manifests/latest"))
-                .willReturn(ResponseDefinitionBuilder.okForJson(Map.of("history", "value"))));
+        wireMockServerRegistry2.givenThat(get(urlEqualTo("/v2/repository-1/blobs/tag-digest"))
+                .withHeader("Accept", WireMock.equalTo("application/octet-stream"))
+                .willReturn(ResponseDefinitionBuilder.okForJson(DOCKER_BLOB_MANIFEST)
+                        .withHeader("Content-Type", "application/octet-stream")));
 
         // when
-        assertThrows(RuntimeException.class,
-                () -> dockerRegistryClient.getTagManifest(REGISTRY_ID_2, REPOSITORY_ID, TAG).block());
+        Mono<DockerBlobManifest> result = dockerRegistryClient.getBlobManifest(REGISTRY_ID_2, REPOSITORY_ID, TAG_DIGEST);
 
         // then
-        // exception expected
+        assertThat(result.block(), equalTo(DOCKER_BLOB_MANIFEST));
+        verifyAuthorization(wireMockServerRegistry2);
     }
 
     @Test

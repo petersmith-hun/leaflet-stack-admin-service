@@ -1,30 +1,23 @@
 package hu.psprog.leaflet.lsas.core.dockerapi;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.List;
+import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * Model class representing the response of a Docker tag manifest request.
  *
  * @author Peter Smith
  */
+@Builder
+@Jacksonized
 public record DockerTagManifest(
-        @JsonProperty("tag") String tag,
-        @JsonProperty("history") List<DockerTagHistory> history
+        @JsonProperty("config") DockerTagManifestConfig config
 ) {
 
-    @JsonCreator
-    public DockerTagManifest {
-    }
-
-    public record DockerTagHistory(
-            @JsonProperty("v1Compatibility") String v1Compatibility
-    ) {
-
-        @JsonCreator
-        public DockerTagHistory {
-        }
-    }
+    @Builder
+    @Jacksonized
+    public record DockerTagManifestConfig(
+            @JsonProperty("digest") String digest
+    ) { }
 }
