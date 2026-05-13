@@ -2,6 +2,7 @@ package hu.psprog.leaflet.lsas.core.service.impl;
 
 import hu.psprog.leaflet.lsas.core.client.DockerRegistryClient;
 import hu.psprog.leaflet.lsas.core.config.ServiceRegistrations;
+import hu.psprog.leaflet.lsas.core.dockerapi.DockerBlobManifest;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerRepositories;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerTagManifest;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerTags;
@@ -19,7 +20,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -104,10 +104,16 @@ class DockerRegistryServiceImplTest {
         String registryID = "leaflet";
         String repositoryID = "cbfs";
         Map<String, DockerTagManifest> tags = Map.of(
-                "latest", prepareManifest("latest", 0),
-                "1.0", prepareManifest("1.0", -10),
-                "2.0", prepareManifest("2.0", -5),
-                "3.0", prepareManifest("3.0", 0)
+                "latest", prepareTagManifest("sha256:latest"),
+                "1.0", prepareTagManifest("sha256:1.0"),
+                "2.0", prepareTagManifest("sha256:2.0"),
+                "3.0", prepareTagManifest("sha256:3.0")
+        );
+        Map<String, DockerBlobManifest> blobs = Map.of(
+                "sha256:latest", prepareBlobManifest(0),
+                "sha256:1.0", prepareBlobManifest(-10),
+                "sha256:2.0", prepareBlobManifest(-5),
+                "sha256:3.0", prepareBlobManifest(0)
         );
         DockerTags dockerTags = DockerTags.builder()
                 .name(repositoryID)
@@ -117,6 +123,9 @@ class DockerRegistryServiceImplTest {
         given(dockerRegistryClient.getRepositoryTags(registryID,  repositoryID)).willReturn(Mono.just(dockerTags));
         tags.forEach((tag, manifest) ->
                 given(dockerRegistryClient.getTagManifest(registryID, repositoryID, tag))
+                        .willReturn(Mono.just(manifest)));
+        blobs.forEach((digest, manifest) ->
+                given(dockerRegistryClient.getBlobManifest(registryID, repositoryID, digest))
                         .willReturn(Mono.just(manifest)));
 
         // when
@@ -148,15 +157,16 @@ class DockerRegistryServiceImplTest {
         verify(dockerRegistryClient).deleteTagByDigest(registryID, repositoryID, tagDigest);
     }
 
-    private DockerTagManifest prepareManifest(String tag, int dayOffset) {
+    private DockerTagManifest prepareTagManifest(String digest) {
+        return new DockerTagManifest(new DockerTagManifest.DockerTagManifestConfig(digest));
+    }
+
+    private DockerBlobManifest prepareBlobManifest(int dayOffset) {
 
         ZonedDateTime baseTime = ZonedDateTime
                 .of(2021, 1, 5, 22, 0, 0, 0, ZoneId.of("UTC"))
                 .plusDays(dayOffset);
 
-        String v1Compatibility = String.format("{\"created\":\"%s\"}", baseTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
-        DockerTagManifest.DockerTagHistory tagHistory = new DockerTagManifest.DockerTagHistory(v1Compatibility);
-
-        return new DockerTagManifest(tag, Collections.singletonList(tagHistory));
+        return new DockerBlobManifest(baseTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
     }
 }

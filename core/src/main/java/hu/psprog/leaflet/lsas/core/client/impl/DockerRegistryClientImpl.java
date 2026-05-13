@@ -2,6 +2,7 @@ package hu.psprog.leaflet.lsas.core.client.impl;
 
 import hu.psprog.leaflet.lsas.core.client.DockerRegistryClient;
 import hu.psprog.leaflet.lsas.core.config.ServiceRegistrations;
+import hu.psprog.leaflet.lsas.core.dockerapi.DockerBlobManifest;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerRepositories;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerTagManifest;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerTags;
@@ -62,6 +63,17 @@ public class DockerRegistryClientImpl implements DockerRegistryClient {
                 .uri(String.format(DockerRegistryPath.TAG_MANIFEST.getUri(), repositoryID, tag))
                 .retrieve()
                 .bodyToMono(DockerTagManifest.class);
+    }
+
+    @Override
+    public Mono<DockerBlobManifest> getBlobManifest(String registryID, String repositoryID, String digest) {
+
+        return getWebClient(registryID)
+                .method(HttpMethod.GET)
+                .uri(String.format(DockerRegistryPath.BLOB_MANIFEST.getUri(), repositoryID, digest))
+                .header("Accept", "application/octet-stream")
+                .retrieve()
+                .bodyToMono(DockerBlobManifest.class);
     }
 
     @Override

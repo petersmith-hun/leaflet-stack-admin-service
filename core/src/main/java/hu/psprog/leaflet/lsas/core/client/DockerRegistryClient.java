@@ -1,5 +1,6 @@
 package hu.psprog.leaflet.lsas.core.client;
 
+import hu.psprog.leaflet.lsas.core.dockerapi.DockerBlobManifest;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerRepositories;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerTagManifest;
 import hu.psprog.leaflet.lsas.core.dockerapi.DockerTags;
@@ -39,6 +40,16 @@ public interface DockerRegistryClient {
      * @return image manifest as {@link DockerTagManifest} object wrapped in {@link Mono}
      */
     Mono<DockerTagManifest> getTagManifest(String registryID, String repositoryID, String tag);
+
+    /**
+     * Retrieves manifest details of the given blob.
+     *
+     * @param registryID ID of the registry the repository is located in
+     * @param repositoryID ID of the repository to retrieve the manifest of
+     * @param digest digest value (sha256:...) of an existing Docker blob
+     * @return blob manifest as {@link DockerBlobManifest} object wrapped in {@link Mono}
+     */
+    Mono<DockerBlobManifest> getBlobManifest(String registryID, String repositoryID, String digest);
 
     /**
      * Retrieves manifest digest of the given tag of an image.
